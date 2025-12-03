@@ -1,0 +1,231 @@
+
+import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Repeat, Loader2, Copy, Check, Zap, Link as LinkIcon, Target, Shuffle, Sparkles } from 'lucide-react';
+import { generateAbacrAnalysis, analyzeGameplayFromUrl, expandDesignPurpose } from '../services/geminiService';
+
+const AbacrLoop: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [analyzingGameplay, setAnalyzingGameplay] = useState(false);
+  const [expandingPurpose, setExpandingPurpose] = useState(false);
+  const [gameName, setGameName] = useState('COLOR BLOCK');
+  const [genre, setGenre] = useState('Puzzle (益智)');
+  const [gameplay, setGameplay] = useState('拖动彩色方块到网格中，填满行或列消除。没有时间限制，但网格填满后游戏结束。连击会有特殊音效。一次消除多行多列或者清空所有色块会有额外的奖励。在这个过程中如何设计插屏广告与激励视频让用户保持心流体验的同时能取得更高的长期收入？');
+  const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
+  const [designPurpose, setDesignPurpose] = useState('增强用户游玩的心流体验，提升产品长期留存，让用户对产品产生挂念感。在这个过程中如何设计插屏广告与激励视频让用户保持心流体验的同时能取得更高的长期收入？');
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Full Google Play Categories with Chinese Translations
+  const googlePlayGenres = [
+    "Action (动作)", "Adventure (冒险)", "Arcade (街机)", "Board (棋类)", 
+    "Card (卡牌)", "Casino (博彩)", "Casual (休闲)", "Educational (教育)", 
+    "Music (音乐)", "Puzzle (益智)", "Racing (赛车)", "Role Playing (角色扮演)", 
+    "Simulation (模拟)", "Sports (体育)", "Strategy (策略)", "Trivia (问答)", 
+    "Word (文字)"
+  ];
+
+  const handleGenerate = async () => {
+    if (!gameName || !gameplay) return;
+    setLoading(true);
+    setAnalysis(null);
+    try {
+      const result = await generateAbacrAnalysis(gameName, genre, gameplay, storeUrl, designPurpose);
+      setAnalysis(result);
+    } catch (error) {
+      console.error(error);
+      alert("生成分析失败，请重试。");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnalyzeGameplay = async () => {
+    if (!gameName || !storeUrl) {
+      alert("请确保已填写游戏名称和商店链接。");
+      return;
+    }
+    setAnalyzingGameplay(true);
+    try {
+      const result = await analyzeGameplayFromUrl(gameName, storeUrl);
+      setGameplay(result);
+    } catch (error) {
+      console.error(error);
+      alert("分析失败，请重试。");
+    } finally {
+      setAnalyzingGameplay(false);
+    }
+  };
+
+  const handleExpandPurpose = async () => {
+    if (!designPurpose || !gameName) return;
+    setExpandingPurpose(true);
+    try {
+      const result = await expandDesignPurpose(designPurpose, gameName);
+      setDesignPurpose(result);
+    } catch (error) {
+      console.error(error);
+      alert("扩展失败，请重试。");
+    } finally {
+      setExpandingPurpose(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!analysis) return;
+    navigator.clipboard.writeText(analysis);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex h-full gap-6">
+      {/* Input Section */}
+      <div className="w-1/3 bg-slate-800 rounded-xl p-6 border border-slate-700/50 flex flex-col shrink-0">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Repeat className="w-5 h-5 text-indigo-400" />
+            A-B-A-C-R 游戏循环结构
+          </h2>
+          <p className="text-sm text-slate-400 mt-1">深度解构游戏的核心上瘾循环模型。</p>
+        </div>
+
+        <div className="space-y-5 flex-1 overflow-y-auto custom-scrollbar">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏名称</label>
+            <input 
+              type="text" 
+              value={gameName}
+              onChange={(e) => setGameName(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏商店链接</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                value={storeUrl}
+                onChange={(e) => setStoreUrl(e.target.value)}
+                placeholder="https://play.google.com/store/..."
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+              />
+              <LinkIcon className="absolute left-3 top-3.5 w-4 h-4 text-slate-500" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏类型 (Google Play)</label>
+            <select 
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {googlePlayGenres.map(g => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                 设计目的 <Target className="w-3 h-3 text-indigo-400" />
+               </label>
+               <button 
+                  onClick={handleExpandPurpose}
+                  disabled={expandingPurpose}
+                  className="text-[10px] bg-slate-700 hover:bg-indigo-600 text-white px-2 py-0.5 rounded flex items-center gap-1 transition-colors disabled:opacity-50"
+                >
+                  {expandingPurpose ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {expandingPurpose ? '扩展中' : 'AI 扩展填入'}
+                </button>
+            </div>
+            <textarea 
+              rows={5}
+              value={designPurpose}
+              onChange={(e) => setDesignPurpose(e.target.value)}
+              placeholder="例如：提升用户留存，增强心流体验..."
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+            />
+          </div>
+
+          <div>
+             <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">核心玩法描述</label>
+                <button 
+                  onClick={handleAnalyzeGameplay}
+                  disabled={analyzingGameplay}
+                  className="text-[10px] bg-slate-700 hover:bg-indigo-600 text-white px-2 py-0.5 rounded flex items-center gap-1 transition-colors disabled:opacity-50"
+                >
+                  {analyzingGameplay ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shuffle className="w-3 h-3" />}
+                  {analyzingGameplay ? '分析中' : 'AI 分析填入'}
+                </button>
+             </div>
+            <textarea 
+              rows={5}
+              value={gameplay}
+              onChange={(e) => setGameplay(e.target.value)}
+              placeholder="详细描述游戏的操作方式、反馈机制和胜利条件..."
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+            />
+          </div>
+
+          <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
+             <h4 className="text-indigo-300 font-bold text-xs mb-2 flex items-center gap-1">
+               <Zap className="w-3 h-3" /> 模型说明
+             </h4>
+             <ul className="text-xs text-slate-400 space-y-1 list-disc pl-4">
+               <li><strong className="text-slate-300">Action:</strong> 初始低门槛行为</li>
+               <li><strong className="text-slate-300">Benefit:</strong> 即时感官反馈</li>
+               <li><strong className="text-slate-300">Action:</strong> 深化操作</li>
+               <li><strong className="text-slate-300">Challenge:</strong> 阻碍与心流</li>
+               <li><strong className="text-slate-300">Reward:</strong> 最终成就奖励</li>
+             </ul>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleGenerate} 
+          disabled={loading}
+          className="mt-6 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-900/50"
+        >
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Repeat className="w-5 h-5" />}
+          {loading ? '结构分析中...' : '生成循环分析'}
+        </button>
+      </div>
+
+      {/* Output Section */}
+      <div className="flex-1 bg-slate-800 rounded-xl p-8 border border-slate-700/50 flex flex-col h-full overflow-hidden">
+        {analysis ? (
+          <>
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
+              <h2 className="text-xl font-bold text-white">A-B-A-C-R 模型分析报告</h2>
+              <button 
+                onClick={handleCopy}
+                className={`bg-slate-700 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${copied ? 'bg-green-600 hover:bg-green-700' : ''}`}
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? '已复制' : '复制内容'}
+              </button>
+            </div>
+            <div className="prose prose-invert prose-indigo max-w-none overflow-y-auto pr-4 custom-scrollbar">
+               <ReactMarkdown>{analysis}</ReactMarkdown>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500">
+             <div className="w-20 h-20 bg-slate-800/50 rounded-2xl flex items-center justify-center mb-4 border border-slate-700 shadow-inner">
+               <Repeat className="w-10 h-10 text-slate-600" />
+             </div>
+             <p className="text-lg font-medium">游戏循环解构</p>
+             <p className="text-sm max-w-xs text-center mt-2">输入玩法细节，AI 将深度剖析游戏的成瘾机制与心流设计。</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AbacrLoop;
