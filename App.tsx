@@ -24,7 +24,13 @@ import StoreComparison from './components/StoreComparison';
 import PushStrategy from './components/PushStrategy';
 import LiveOpsGenerator from './components/LiveOpsGenerator';
 import AsoKeywords from './components/AsoKeywords';
+import IaaMonetization from './components/IaaMonetization';
+import IapMonetization from './components/IapMonetization';
+import GooglePlayNews from './components/GooglePlayNews';
+import AppStoreNews from './components/AppStoreNews';
+import AdTechNews from './components/AdTechNews';
 import { AppView } from './types';
+import { Search, Megaphone, Zap, BarChart2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.STRATEGY);
@@ -77,6 +83,22 @@ const App: React.FC = () => {
         return <PushStrategy />;
       case AppView.LIVEOPS_GEN:
         return <LiveOpsGenerator />;
+      case AppView.IAA_MONETIZATION:
+        return <IaaMonetization />;
+      case AppView.IAP_MONETIZATION:
+        return <IapMonetization />;
+      case AppView.GOOGLE_PLAY_NEWS:
+        return <GooglePlayNews />;
+      case AppView.APPSTORE_NEWS:
+        return <AppStoreNews />;
+      case AppView.GOOGLE_ADS_NEWS:
+        return <AdTechNews platform="Google Ads" icon={Search} />;
+      case AppView.FACEBOOK_ADS_NEWS:
+        return <AdTechNews platform="Facebook Ads" icon={Megaphone} />;
+      case AppView.APPLOVIN_NEWS:
+        return <AdTechNews platform="AppLovin" icon={Zap} />;
+      case AppView.APPSFLYER_NEWS:
+        return <AdTechNews platform="AppsFlyer" icon={BarChart2} />;
       case AppView.SETTINGS:
         return <div className="text-white">设置 (占位符)</div>;
       default:
@@ -109,6 +131,14 @@ const App: React.FC = () => {
       case AppView.STORE_COMPARISON: return '游戏商店详情页对比';
       case AppView.PUSH_STRATEGY: return '游戏通知PUSH策略';
       case AppView.LIVEOPS_GEN: return 'GooglePlay LiveOps物料';
+      case AppView.IAA_MONETIZATION: return 'IAA游戏商业化方案';
+      case AppView.IAP_MONETIZATION: return 'IAP游戏商业化方案';
+      case AppView.GOOGLE_PLAY_NEWS: return 'GOOGLE PLAY最新资讯';
+      case AppView.APPSTORE_NEWS: return 'APPSTORE最新资讯';
+      case AppView.GOOGLE_ADS_NEWS: return 'GOOGLE ADS最新资讯';
+      case AppView.FACEBOOK_ADS_NEWS: return 'FACEBOOK ADS最新资讯';
+      case AppView.APPLOVIN_NEWS: return 'APPLOVIN最新资讯';
+      case AppView.APPSFLYER_NEWS: return 'APPSFLYER最新资讯';
       case AppView.SETTINGS: return '设置';
       default: return 'FB广告策略生成器';
     }

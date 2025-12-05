@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, Trophy, Crosshair, Clock, BarChart, Layers, Zap, Target, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { Loader2, Trophy, Crosshair, Clock, BarChart, Layers, Zap, Target, Link as LinkIcon, Sparkles, Percent, Hourglass } from 'lucide-react';
 import { generateCpeEvents, analyzeGameplayFromUrl } from '../services/geminiService';
 import { CpeEvent } from '../types';
 
@@ -12,6 +12,8 @@ const CpeGenerator: React.FC = () => {
   const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
   const [gameplay, setGameplay] = useState('通过拖动不同形状的彩块填满行或列进行消除，类似俄罗斯方块，但没有重力下落。有关卡模式和无尽模式。');
   const [acquisitionGoal, setAcquisitionGoal] = useState('长期高频打开游戏玩关卡用户');
+  const [singleCount, setSingleCount] = useState(20);
+  const [comboCount, setComboCount] = useState(6);
   const [singleEvents, setSingleEvents] = useState<CpeEvent[]>([]);
   const [comboEvents, setComboEvents] = useState<CpeEvent[]>([]);
 
@@ -31,7 +33,7 @@ const CpeGenerator: React.FC = () => {
     setSingleEvents([]); 
     setComboEvents([]);
     try {
-      const data = await generateCpeEvents(gameName, genre, gameplay, acquisitionGoal);
+      const data = await generateCpeEvents(gameName, genre, gameplay, acquisitionGoal, singleCount, comboCount);
       setSingleEvents(data.singleEvents);
       setComboEvents(data.comboEvents);
     } catch (error) {
@@ -60,7 +62,7 @@ const CpeGenerator: React.FC = () => {
   };
 
   const getDifficultyColor = (diff: string | undefined) => {
-    if (!diff) return 'text-slate-400 bg-slate-400/10';
+    if (!diff || typeof diff !== 'string') return 'text-slate-400 bg-slate-400/10';
     switch (diff.toLowerCase()) {
       case 'easy': return 'text-green-400 bg-green-400/10 border-green-400/20';
       case 'medium': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
@@ -77,8 +79,10 @@ const CpeGenerator: React.FC = () => {
             <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold border ${isCombo ? 'bg-purple-900/50 text-purple-300 border-purple-500/50' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
               {index + 1}
             </span>
-            <h3 className="text-lg font-bold text-white">{event.eventName}</h3>
-            {isCombo && <span className="bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Combo</span>}
+            <div className="flex flex-col">
+               <h3 className="text-sm font-bold text-white font-mono tracking-tight">{event.eventName}</h3>
+               {isCombo && <span className="bg-purple-500 text-white text-[9px] px-1 py-0.5 rounded font-bold uppercase tracking-wide w-fit mt-0.5">Combo</span>}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getDifficultyColor(event.difficulty)}`}>
@@ -92,12 +96,28 @@ const CpeGenerator: React.FC = () => {
       </div>
 
       <div className="bg-slate-950/50 rounded-lg p-3 border border-slate-800">
-          <p className="text-slate-300 text-sm leading-relaxed">{event.description}</p>
+          <p className="text-slate-300 text-sm leading-relaxed">{event.descriptionZh}</p>
+          <p className="text-slate-500 text-xs mt-1.5 italic border-t border-slate-800/50 pt-1.5">{event.descriptionEn}</p>
       </div>
 
-      <div className="flex items-start gap-2 text-xs text-slate-500 mt-1">
-          <div className="mt-0.5 min-w-[16px]"><BarChart className="w-4 h-4 text-indigo-500" /></div>
-          <p><span className="text-indigo-400 font-medium">买量价值：</span>{event.uaValue}</p>
+      <div className="grid grid-cols-2 gap-3 mt-1">
+         <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/50 p-2 rounded border border-slate-700/50">
+            <Percent className="w-3.5 h-3.5 text-indigo-400" />
+            <span>预估达成率: <span className="text-white font-medium">{event.completionRate}</span></span>
+         </div>
+         <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/50 p-2 rounded border border-slate-700/50">
+            <Hourglass className="w-3.5 h-3.5 text-indigo-400" />
+            <span>建议时限: <span className="text-white font-medium">{event.timeLimit}</span></span>
+         </div>
+      </div>
+
+      <div className="flex items-start gap-2 text-xs text-slate-500 mt-1 pt-2 border-t border-slate-800">
+          <div className="mt-0.5 min-w-[16px]"><BarChart className="w-4 h-4 text-emerald-500" /></div>
+          <div className="flex-1">
+             <span className="text-emerald-400 font-medium">买量价值：</span>
+             <p className="text-slate-400 mt-0.5">{event.uaValueZh}</p>
+             <p className="text-slate-600 mt-0.5">{event.uaValueEn}</p>
+          </div>
       </div>
     </div>
   );
@@ -167,6 +187,31 @@ const CpeGenerator: React.FC = () => {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">单一事件数量</label>
+               <input 
+                 type="number" 
+                 min="1"
+                 max="50"
+                 value={singleCount}
+                 onChange={(e) => setSingleCount(Number(e.target.value))}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+               />
+             </div>
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">组合事件数量</label>
+               <input 
+                 type="number" 
+                 min="1"
+                 max="20"
+                 value={comboCount}
+                 onChange={(e) => setComboCount(Number(e.target.value))}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+               />
+             </div>
+          </div>
+
           <div>
             <div className="flex justify-between items-center mb-2">
                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">游戏描述</label>
@@ -196,7 +241,7 @@ const CpeGenerator: React.FC = () => {
           className="mt-6 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-900/50"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crosshair className="w-5 h-5" />}
-          {loading ? '规划中...' : '生成单一 + 组合事件'}
+          {loading ? '规划中...' : `生成 ${singleCount} 个单一 + ${comboCount} 个组合事件`}
         </button>
       </div>
 
@@ -219,7 +264,7 @@ const CpeGenerator: React.FC = () => {
                   <BarChart className="w-10 h-10 text-slate-600" />
                 </div>
                 <p className="text-lg font-medium">准备规划</p>
-                <p className="text-sm max-w-xs text-center mt-2">输入玩法信息，AI 将为您生成 20 个基础事件和 5 个高价值组合事件。</p>
+                <p className="text-sm max-w-xs text-center mt-2">输入玩法信息，AI 将为您生成详细的 CPE 买量事件策略。</p>
              </div>
           )}
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Swords, Loader2, Copy, Check, Link as LinkIcon, Search, RefreshCw, BarChart2, Globe, Clock, Users, Percent, Target, Heart, Briefcase, Wallet, Gamepad2, Layers, Repeat, Zap, Bell, Volume2, Store, Palette, MessageCircle, Share2, Code, Flag, AlertTriangle, User, Calendar, TrendingUp, Smartphone, MessageSquare, FileText } from 'lucide-react';
@@ -68,13 +69,70 @@ const CompetitorAnalysis: React.FC = () => {
 
   const handleExport = () => {
     if (!report) return;
-    const fullText = Object.entries(report)
-      .map(([key, value]) => `## ${key}\n\n${value}`)
+    
+    let markdown = `# Competitor Analysis: ${gameName}\n\n`;
+    
+    // Metrics Section
+    if (metrics) {
+        markdown += `## 1. Key Metrics (关键指标)\n\n`;
+        markdown += `| Metric | Value |\n|---|---|\n`;
+        markdown += `| Retention D1 | ${metrics.d1} |\n`;
+        markdown += `| Retention D7 | ${metrics.d7} |\n`;
+        markdown += `| Retention D30 | ${metrics.d30} |\n`;
+        markdown += `| Avg Session | ${metrics.avgSessionDuration} |\n`;
+        markdown += `| Est. DAU | ${metrics.estimatedDau} |\n`;
+        markdown += `| Top Countries | ${metrics.topCountries?.join(', ')} |\n\n`;
+    }
+
+    // Market Performance Section
+    if (market) {
+        markdown += `## 2. Market Performance (市场表现)\n\n`;
+        
+        if (market.financialTrends?.length > 0) {
+            markdown += `### Financial Trends\n`;
+            markdown += `| Month | Downloads | Revenue |\n|---|---|---|\n`;
+            market.financialTrends.forEach(t => {
+                markdown += `| ${t.month} | ${t.downloads} | ${t.revenue} |\n`;
+            });
+            markdown += `\n`;
+        }
+
+        if (market.rankingHistory?.length > 0) {
+            markdown += `### Ranking History\n`;
+            markdown += `| Month | Free Rank | Grossing Rank |\n|---|---|---|\n`;
+            market.rankingHistory.forEach(t => {
+                markdown += `| ${t.month} | ${t.freeRank} | ${t.grossingRank} |\n`;
+            });
+            markdown += `\n`;
+        }
+
+        if (market.genderDistribution?.length > 0) {
+            markdown += `### Demographics\n`;
+            markdown += `- **Gender:** ${market.genderDistribution.map(d => `${d.name}: ${d.value}%`).join(', ')}\n`;
+            markdown += `- **Age:** ${market.ageDistribution?.map(d => `${d.name}: ${d.value}%`).join(', ')}\n\n`;
+        }
+    }
+
+    // Audience Section
+    if (audience) {
+        markdown += `## 3. Target Audience (目标受众)\n\n`;
+        markdown += `- **Age/Gender:** ${audience.age}, ${audience.gender}\n`;
+        markdown += `- **Location:** ${audience.countries?.join(', ')}\n`;
+        markdown += `- **Occupation/Income:** ${audience.occupation?.join(', ')} | ${audience.income}\n`;
+        markdown += `- **Interests:** ${audience.interests?.join(', ')}\n`;
+        markdown += `- **Relationship:** ${audience.relationship}\n\n`;
+    }
+
+    // Detailed Report Section
+    markdown += `## 4. Detailed Analysis (深度拆解)\n\n`;
+    markdown += Object.entries(report)
+      .map(([key, value]) => `### ${key.replace(/([A-Z])/g, ' $1').trim()}\n${value}`)
       .join('\n\n');
-    exportToGoogleDocs(fullText, `Competitor Analysis - ${gameName}`);
+
+    exportToGoogleDocs(markdown, `Competitor Analysis - ${gameName}`);
   };
 
-  const MetricCard = ({ icon: Icon, title, value, color }: { icon: any, title: string, value: string, color: string }) => (
+  const MetricCard = ({ icon: Icon, title, value, color }: { icon: React.ElementType, title: string, value: string, color: string }) => (
     <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50 flex flex-col gap-1">
        <div className="flex items-center gap-2 text-slate-400 text-xs uppercase font-bold tracking-wider">
          <Icon className={`w-3 h-3 ${color}`} />
@@ -86,7 +144,7 @@ const CompetitorAnalysis: React.FC = () => {
     </div>
   );
 
-  const AnalysisCard = ({ title, icon: Icon, content, colorClass }: { title: string, icon: any, content: string, colorClass: string }) => (
+  const AnalysisCard = ({ title, icon: Icon, content, colorClass }: { title: string, icon: React.ElementType, content: string, colorClass: string }) => (
      <div className="bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden hover:border-slate-600 transition-all flex flex-col h-full">
         <div className={`px-4 py-3 border-b border-slate-800 flex items-center gap-2 ${colorClass} bg-slate-900/50`}>
           <Icon className="w-4 h-4" />
@@ -244,7 +302,7 @@ const CompetitorAnalysis: React.FC = () => {
               )}
 
               {/* Market Performance Module */}
-              {market && (
+              {market && (market.financialTrends?.length > 0 || market.rankingHistory?.length > 0) && (
                 <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5">
                    <div className="flex items-center gap-2 mb-5">
                       <TrendingUp className="w-5 h-5 text-blue-400" />
@@ -253,10 +311,11 @@ const CompetitorAnalysis: React.FC = () => {
                    
                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
                       {/* Trend Chart */}
+                      {market.financialTrends?.length > 0 && (
                       <div className="bg-slate-900/50 border border-slate-700/30 rounded-lg p-4 h-[300px]">
                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">下载量与收入趋势 (Est.)</h4>
                          <ResponsiveContainer width="100%" height="90%">
-                           <ComposedChart data={market.financialTrends || []}>
+                           <ComposedChart data={market.financialTrends}>
                              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                              <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                              <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
@@ -268,12 +327,14 @@ const CompetitorAnalysis: React.FC = () => {
                            </ComposedChart>
                          </ResponsiveContainer>
                       </div>
+                      )}
 
                       {/* Ranking Chart */}
+                      {market.rankingHistory?.length > 0 && (
                       <div className="bg-slate-900/50 border border-slate-700/30 rounded-lg p-4 h-[300px]">
                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">榜单排名趋势 (Ranking)</h4>
                          <ResponsiveContainer width="100%" height="90%">
-                           <LineChart data={market.rankingHistory || []}>
+                           <LineChart data={market.rankingHistory}>
                              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                              <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                              <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} reversed domain={[1, 200]} />
@@ -284,16 +345,18 @@ const CompetitorAnalysis: React.FC = () => {
                            </LineChart>
                          </ResponsiveContainer>
                       </div>
+                      )}
                    </div>
 
                    {/* Demographics */}
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {market.genderDistribution?.length > 0 && (
                       <div className="bg-slate-900/50 border border-slate-700/30 rounded-lg p-4 h-[250px] flex flex-col">
                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">性别分布 (Gender)</h4>
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                               <Pie
-                                data={market.genderDistribution || []}
+                                data={market.genderDistribution}
                                 cx="50%"
                                 cy="50%"
                                 innerRadius={40}
@@ -302,7 +365,7 @@ const CompetitorAnalysis: React.FC = () => {
                                 paddingAngle={5}
                                 dataKey="value"
                               >
-                                {market.genderDistribution?.map((entry, index) => (
+                                {market.genderDistribution.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={index === 0 ? '#60a5fa' : '#f472b6'} />
                                 ))}
                               </Pie>
@@ -311,13 +374,15 @@ const CompetitorAnalysis: React.FC = () => {
                             </PieChart>
                          </ResponsiveContainer>
                       </div>
+                      )}
 
+                      {market.ageDistribution?.length > 0 && (
                       <div className="bg-slate-900/50 border border-slate-700/30 rounded-lg p-4 h-[250px] flex flex-col">
                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">年龄层分布 (Age)</h4>
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                               <Pie
-                                data={market.ageDistribution || []}
+                                data={market.ageDistribution}
                                 cx="50%"
                                 cy="50%"
                                 innerRadius={40}
@@ -326,7 +391,7 @@ const CompetitorAnalysis: React.FC = () => {
                                 paddingAngle={2}
                                 dataKey="value"
                               >
-                                {market.ageDistribution?.map((entry, index) => (
+                                {market.ageDistribution.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                               </Pie>
@@ -335,6 +400,7 @@ const CompetitorAnalysis: React.FC = () => {
                             </PieChart>
                          </ResponsiveContainer>
                       </div>
+                      )}
                    </div>
                 </div>
               )}

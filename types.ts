@@ -23,6 +23,14 @@ export enum AppView {
   STORE_COMPARISON = 'STORE_COMPARISON',
   PUSH_STRATEGY = 'PUSH_STRATEGY',
   LIVEOPS_GEN = 'LIVEOPS_GEN',
+  IAA_MONETIZATION = 'IAA_MONETIZATION',
+  IAP_MONETIZATION = 'IAP_MONETIZATION',
+  GOOGLE_PLAY_NEWS = 'GOOGLE_PLAY_NEWS',
+  APPSTORE_NEWS = 'APPSTORE_NEWS',
+  GOOGLE_ADS_NEWS = 'GOOGLE_ADS_NEWS',
+  FACEBOOK_ADS_NEWS = 'FACEBOOK_ADS_NEWS',
+  APPLOVIN_NEWS = 'APPLOVIN_NEWS',
+  APPSFLYER_NEWS = 'APPSFLYER_NEWS',
   SETTINGS = 'SETTINGS'
 }
 
@@ -70,10 +78,14 @@ export interface CopyVariant {
 export interface CpeEvent {
   id: string;
   eventName: string; // e.g., "Level 10 Completed"
-  description: string; // Detail description
+  descriptionZh: string; // Detail description (Chinese)
+  descriptionEn: string; // Detail description (English)
   difficulty: 'Easy' | 'Medium' | 'Hard' | 'Hardcore';
   estimatedTime: string; // e.g., "30 mins"
-  uaValue: string; // Why is this good for UA?
+  uaValueZh: string; // Why is this good for UA? (Chinese)
+  uaValueEn: string; // Why is this good for UA? (English)
+  completionRate: string; // Estimated % of users completing relative to install
+  timeLimit: string; // Recommended time limit window
 }
 
 export interface CpeResponse {

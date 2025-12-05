@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Headphones, Sparkles, Volume2, Link as LinkIcon, Copy, Check, Loader2, FileText, BookOpen } from 'lucide-react';
+import { Headphones, Sparkles, Volume2, Link as LinkIcon, Copy, Check, Loader2, FileText, BookOpen, Globe } from 'lucide-react';
 import { generateAsmrPlan } from '../services/geminiService';
 import { researchExplanations } from '../constants';
 import { AppView } from '../types';
@@ -13,6 +13,7 @@ const AsmrResearch: React.FC = () => {
   const [genre, setGenre] = useState('Puzzle (益智)');
   const [asmrType, setAsmrType] = useState('Satisfying Clicks (解压点击音)');
   const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
+  const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
   const [plan, setPlan] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -20,7 +21,7 @@ const AsmrResearch: React.FC = () => {
     setLoading(true);
     setPlan(null);
     try {
-      const result = await generateAsmrPlan(gameName, genre, asmrType, storeUrl);
+      const result = await generateAsmrPlan(gameName, genre, asmrType, storeUrl, language);
       setPlan(result);
     } catch (error) {
       console.error(error);
@@ -49,6 +50,18 @@ const AsmrResearch: React.FC = () => {
     "Music (音乐)", "Puzzle (益智)", "Racing (赛车)", "Role Playing (角色扮演)", 
     "Simulation (模拟)", "Sports (体育)", "Strategy (策略)", "Trivia (问答)", 
     "Word (文字)"
+  ];
+
+  const languages = [
+    "Simplified Chinese (简体中文)",
+    "English (英文)",
+    "Traditional Chinese (繁体中文)",
+    "Japanese (日语)",
+    "Korean (韩语)",
+    "Spanish (西班牙语)",
+    "Portuguese (葡萄牙语)",
+    "German (德语)",
+    "French (法语)"
   ];
   
   return (
@@ -114,6 +127,21 @@ const AsmrResearch: React.FC = () => {
               <option>Roleplay (角色扮演)</option>
               <option>Sorting/Organizing (收纳整理)</option>
               <option>Crunchy/Destruction (破坏音效)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Globe className="w-3 h-3" /> 输出语言
+            </label>
+            <select 
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {languages.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
             </select>
           </div>
           

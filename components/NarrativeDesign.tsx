@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { BookOpen, Loader2, Copy, Check, Link as LinkIcon, Shuffle, FileText, Swords, Repeat, GitBranch, Share2 } from 'lucide-react';
+import { BookOpen, Loader2, Copy, Check, Link as LinkIcon, Shuffle, FileText, Swords, Repeat, GitBranch, Share2, Globe } from 'lucide-react';
 import { generateNarrativeAnalysis, analyzeGameplayFromUrl } from '../services/geminiService';
 import { researchExplanations } from '../constants';
 import { AppView, NarrativeResponse } from '../types';
@@ -17,6 +17,19 @@ const NarrativeDesign: React.FC = () => {
   const [genre, setGenre] = useState('Puzzle (益智)');
   const [result, setResult] = useState<NarrativeResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
+
+  const languages = [
+    "Simplified Chinese (简体中文)",
+    "English (英文)",
+    "Traditional Chinese (繁体中文)",
+    "Japanese (日语)",
+    "Korean (韩语)",
+    "Spanish (西班牙语)",
+    "Portuguese (葡萄牙语)",
+    "German (德语)",
+    "French (法语)"
+  ];
 
   // Full Google Play Categories with Chinese Translations
   const googlePlayGenres = [
@@ -35,7 +48,7 @@ const NarrativeDesign: React.FC = () => {
     setLoading(true);
     setResult(null);
     try {
-      const data = await generateNarrativeAnalysis(gameName, gameplay, storeUrl, genre);
+      const data = await generateNarrativeAnalysis(gameName, gameplay, storeUrl, genre, language);
       setResult(data);
     } catch (error) {
       console.error(error);
@@ -150,6 +163,21 @@ const NarrativeDesign: React.FC = () => {
               placeholder="详细描述游戏的操作方式、故事背景..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Globe className="w-3 h-3" /> 输出语言
+            </label>
+            <select 
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {languages.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">

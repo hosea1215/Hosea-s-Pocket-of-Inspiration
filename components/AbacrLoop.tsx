@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Repeat, Loader2, Copy, Check, Zap, Link as LinkIcon, Target, Shuffle, Sparkles, FileText, BookOpen } from 'lucide-react';
+import { Repeat, Loader2, Copy, Check, Zap, Link as LinkIcon, Target, Shuffle, Sparkles, FileText, BookOpen, Globe } from 'lucide-react';
 import { generateAbacrAnalysis, analyzeGameplayFromUrl, expandDesignPurpose } from '../services/geminiService';
 import { researchExplanations } from '../constants';
 import { AppView } from '../types';
@@ -18,6 +18,7 @@ const AbacrLoop: React.FC = () => {
   const [designPurpose, setDesignPurpose] = useState('增强用户游玩的心流体验，提升产品长期留存，让用户对产品产生挂念感。在这个过程中如何设计插屏广告与激励视频让用户保持心流体验的同时能取得更高的长期收入？');
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
 
   // Full Google Play Categories with Chinese Translations
   const googlePlayGenres = [
@@ -28,12 +29,24 @@ const AbacrLoop: React.FC = () => {
     "Word (文字)"
   ];
 
+  const languages = [
+    "Simplified Chinese (简体中文)",
+    "English (英文)",
+    "Traditional Chinese (繁体中文)",
+    "Japanese (日语)",
+    "Korean (韩语)",
+    "Spanish (西班牙语)",
+    "Portuguese (葡萄牙语)",
+    "German (德语)",
+    "French (法语)"
+  ];
+
   const handleGenerate = async () => {
     if (!gameName || !gameplay) return;
     setLoading(true);
     setAnalysis(null);
     try {
-      const result = await generateAbacrAnalysis(gameName, genre, gameplay, storeUrl, designPurpose);
+      const result = await generateAbacrAnalysis(gameName, genre, gameplay, storeUrl, designPurpose, language);
       setAnalysis(result);
     } catch (error) {
       console.error(error);
@@ -178,6 +191,21 @@ const AbacrLoop: React.FC = () => {
               placeholder="详细描述游戏的操作方式、反馈机制和胜利条件..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Globe className="w-3 h-3" /> 输出语言
+            </label>
+            <select 
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {languages.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">

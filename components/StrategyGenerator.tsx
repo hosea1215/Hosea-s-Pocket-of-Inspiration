@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, Zap, Send, Link as LinkIcon, Copy, Check, Search, FileText } from 'lucide-react';
+import { Loader2, Zap, Send, Link as LinkIcon, Copy, Check, Search, FileText, Globe } from 'lucide-react';
 import { GameDetails } from '../types';
 import { generateMarketingPlan, generateAsoAnalysis } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
@@ -11,6 +11,7 @@ const StrategyGenerator: React.FC = () => {
   const [asoLoading, setAsoLoading] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
   const [details, setDetails] = useState<GameDetails>({
     name: 'COLOR BLOCK',
     genre: 'Puzzle (益智)',
@@ -24,11 +25,23 @@ const StrategyGenerator: React.FC = () => {
     storeUrl: 'https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend'
   });
 
+  const languages = [
+    "Simplified Chinese (简体中文)",
+    "English (英文)",
+    "Traditional Chinese (繁体中文)",
+    "Japanese (日语)",
+    "Korean (韩语)",
+    "Spanish (西班牙语)",
+    "Portuguese (葡萄牙语)",
+    "German (德语)",
+    "French (法语)"
+  ];
+
   const handleGenerate = async () => {
     setLoading(true);
     setPlan(null);
     try {
-      const generatedPlan = await generateMarketingPlan(details);
+      const generatedPlan = await generateMarketingPlan(details, language);
       setPlan(generatedPlan);
     } catch (error) {
       console.error(error);
@@ -42,7 +55,7 @@ const StrategyGenerator: React.FC = () => {
     setAsoLoading(true);
     setPlan(null); // Clear previous plan to show ASO results cleanly
     try {
-      const analysis = await generateAsoAnalysis(details);
+      const analysis = await generateAsoAnalysis(details, language);
       setPlan(analysis);
     } catch (error) {
       console.error(error);
@@ -217,6 +230,21 @@ const StrategyGenerator: React.FC = () => {
               onChange={handleInputChange}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Globe className="w-3 h-3" /> 输出语言
+            </label>
+            <select 
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {languages.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -23,6 +23,9 @@ const accessLogData = [
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showAccessLog, setShowAccessLog] = useState(false);
+  const [growthExpanded, setGrowthExpanded] = useState(false);
+  const [monetizationExpanded, setMonetizationExpanded] = useState(false);
+  const [newsExpanded, setNewsExpanded] = useState(false);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [creativeExpanded, setCreativeExpanded] = useState(false);
   const [experienceExpanded, setExperienceExpanded] = useState(true); // Default open for better visibility
@@ -32,8 +35,28 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const mainNavItems = [
     { id: AppView.LTV_CALCULATOR, label: '游戏LTV&回本估算器', icon: Calculator },
     { id: AppView.COMPETITOR_ANALYSIS, label: '竞品数据与玩法拆解', icon: Swords },
+  ];
+
+  // Items to be grouped under "Product Monetization" (Moved Above Growth)
+  const monetizationNavItems = [
+    { id: AppView.IAA_MONETIZATION, label: 'IAA游戏商业化方案', icon: MonitorPlay },
+    { id: AppView.IAP_MONETIZATION, label: 'IAP游戏商业化方案', icon: Gem },
+  ];
+
+  // Items to be grouped under "User Acquisition Growth"
+  const growthNavItems = [
     { id: AppView.STRATEGY, label: 'FB广告策略生成器', icon: FileText },
     { id: AppView.CPE_GEN, label: '买量事件生成器', icon: Trophy },
+  ];
+
+  // Items to be grouped under "Latest News Brief"
+  const newsNavItems = [
+    { id: AppView.GOOGLE_PLAY_NEWS, label: 'GOOGLE PLAY最新资讯', icon: Store },
+    { id: AppView.APPSTORE_NEWS, label: 'APPSTORE最新资讯', icon: ExternalLink },
+    { id: AppView.GOOGLE_ADS_NEWS, label: 'GOOGLE ADS最新资讯', icon: Search },
+    { id: AppView.FACEBOOK_ADS_NEWS, label: 'FACEBOOK ADS最新资讯', icon: Megaphone },
+    { id: AppView.APPLOVIN_NEWS, label: 'APPLOVIN最新资讯', icon: Zap },
+    { id: AppView.APPSFLYER_NEWS, label: 'APPSFLYER最新资讯', icon: BarChart2 },
   ];
 
   // Items to be grouped under "Creative & Copy"
@@ -69,6 +92,18 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
 
   // Auto-expand groups if current view is inside them
   useEffect(() => {
+    const isGrowthView = growthNavItems.some(item => item.id === currentView);
+    if (isGrowthView) {
+      setGrowthExpanded(true);
+    }
+    const isMonetizationView = monetizationNavItems.some(item => item.id === currentView);
+    if (isMonetizationView) {
+      setMonetizationExpanded(true);
+    }
+    const isNewsView = newsNavItems.some(item => item.id === currentView);
+    if (isNewsView) {
+      setNewsExpanded(true);
+    }
     const isToolView = toolNavItems.some(item => item.id === currentView);
     if (isToolView) {
       setToolsExpanded(true);
@@ -82,6 +117,33 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
       setExperienceExpanded(true);
     }
   }, [currentView]);
+
+  const handleGrowthClick = () => {
+    if (collapsed) {
+      setCollapsed(false);
+      setGrowthExpanded(true);
+    } else {
+      setGrowthExpanded(!growthExpanded);
+    }
+  };
+
+  const handleMonetizationClick = () => {
+    if (collapsed) {
+      setCollapsed(false);
+      setMonetizationExpanded(true);
+    } else {
+      setMonetizationExpanded(!monetizationExpanded);
+    }
+  };
+
+  const handleNewsClick = () => {
+    if (collapsed) {
+      setCollapsed(false);
+      setNewsExpanded(true);
+    } else {
+      setNewsExpanded(!newsExpanded);
+    }
+  };
 
   const handleToolsClick = () => {
     if (collapsed) {
@@ -193,6 +255,72 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
           {/* Main Items */}
           {mainNavItems.map(item => renderNavItem(item))}
 
+          {/* Experience Group Separator/Toggle */}
+          <div className="pt-2 mt-2 border-t border-slate-800/50">
+            <button
+              onClick={handleExperienceClick}
+              title={collapsed ? "游戏体验研究" : ""}
+              className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-lg transition-all duration-200 group text-slate-400 hover:bg-slate-800 hover:text-slate-200`}
+            >
+              <Brain className={`w-5 h-5 flex-shrink-0 text-slate-500 group-hover:text-slate-300 ${experienceExpanded && !collapsed ? 'text-indigo-400' : ''}`} />
+              {!collapsed && (
+                <>
+                  <span className="font-medium text-left flex-1 whitespace-nowrap text-sm">游戏体验研究</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${experienceExpanded ? 'rotate-180' : ''}`} />
+                </>
+              )}
+            </button>
+
+            {/* Experience Collapsible Content */}
+            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${experienceExpanded || (collapsed && false) ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              {experienceNavItems.map(item => renderNavItem(item, true, true))}
+            </div>
+          </div>
+
+          {/* Monetization Group Separator/Toggle */}
+          <div className="pt-2 mt-2 border-t border-slate-800/50">
+            <button
+              onClick={handleMonetizationClick}
+              title={collapsed ? "产品商业化" : ""}
+              className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-lg transition-all duration-200 group text-slate-400 hover:bg-slate-800 hover:text-slate-200`}
+            >
+              <Coins className={`w-5 h-5 flex-shrink-0 text-slate-500 group-hover:text-slate-300 ${monetizationExpanded && !collapsed ? 'text-indigo-400' : ''}`} />
+              {!collapsed && (
+                <>
+                  <span className="font-medium text-left flex-1 whitespace-nowrap text-sm">产品商业化</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${monetizationExpanded ? 'rotate-180' : ''}`} />
+                </>
+              )}
+            </button>
+
+            {/* Monetization Collapsible Content */}
+            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${monetizationExpanded || (collapsed && false) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              {monetizationNavItems.map(item => renderNavItem(item, true))}
+            </div>
+          </div>
+
+          {/* Growth Group Separator/Toggle */}
+          <div className="pt-2 mt-2 border-t border-slate-800/50">
+            <button
+              onClick={handleGrowthClick}
+              title={collapsed ? "获客增长" : ""}
+              className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-lg transition-all duration-200 group text-slate-400 hover:bg-slate-800 hover:text-slate-200`}
+            >
+              <TrendingUp className={`w-5 h-5 flex-shrink-0 text-slate-500 group-hover:text-slate-300 ${growthExpanded && !collapsed ? 'text-indigo-400' : ''}`} />
+              {!collapsed && (
+                <>
+                  <span className="font-medium text-left flex-1 whitespace-nowrap text-sm">获客增长</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${growthExpanded ? 'rotate-180' : ''}`} />
+                </>
+              )}
+            </button>
+
+            {/* Growth Collapsible Content */}
+            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${growthExpanded || (collapsed && false) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              {growthNavItems.map(item => renderNavItem(item, true))}
+            </div>
+          </div>
+
           {/* Creative Group Separator/Toggle */}
           <div className="pt-2 mt-2 border-t border-slate-800/50">
             <button
@@ -215,25 +343,25 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
             </div>
           </div>
 
-          {/* Experience Group Separator/Toggle */}
+          {/* News Group Separator/Toggle */}
           <div className="pt-2 mt-2 border-t border-slate-800/50">
             <button
-              onClick={handleExperienceClick}
-              title={collapsed ? "游戏体验研究" : ""}
+              onClick={handleNewsClick}
+              title={collapsed ? "最新资讯简报" : ""}
               className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-lg transition-all duration-200 group text-slate-400 hover:bg-slate-800 hover:text-slate-200`}
             >
-              <Brain className={`w-5 h-5 flex-shrink-0 text-slate-500 group-hover:text-slate-300 ${experienceExpanded && !collapsed ? 'text-indigo-400' : ''}`} />
+              <Newspaper className={`w-5 h-5 flex-shrink-0 text-slate-500 group-hover:text-slate-300 ${newsExpanded && !collapsed ? 'text-indigo-400' : ''}`} />
               {!collapsed && (
                 <>
-                  <span className="font-medium text-left flex-1 whitespace-nowrap text-sm">游戏体验研究</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${experienceExpanded ? 'rotate-180' : ''}`} />
+                  <span className="font-medium text-left flex-1 whitespace-nowrap text-sm">最新资讯简报</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${newsExpanded ? 'rotate-180' : ''}`} />
                 </>
               )}
             </button>
 
-            {/* Experience Collapsible Content */}
-            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${experienceExpanded || (collapsed && false) ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-              {experienceNavItems.map(item => renderNavItem(item, true, true))}
+            {/* News Collapsible Content */}
+            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${newsExpanded || (collapsed && false) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              {newsNavItems.map(item => renderNavItem(item, true))}
             </div>
           </div>
 

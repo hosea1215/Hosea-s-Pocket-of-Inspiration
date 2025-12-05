@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calendar, Loader2, Link as LinkIcon, Sparkles, Copy, Check, Image as ImageIcon, Shuffle, Download, Palette, Type, User, Maximize2, X } from 'lucide-react';
+import { Calendar, Loader2, Link as LinkIcon, Sparkles, Copy, Check, Image as ImageIcon, Shuffle, Download, Palette, Type, User, Maximize2, X, Cpu } from 'lucide-react';
 import { generateLiveOpsContent, generateAdImage } from '../services/geminiService';
 import { LiveOpsContent } from '../types';
 
@@ -15,6 +15,7 @@ const LiveOpsGenerator: React.FC = () => {
   const [language, setLanguage] = useState('English');
   const [includeText, setIncludeText] = useState(false);
   const [includeCharacters, setIncludeCharacters] = useState(true);
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash-image');
   const [result, setResult] = useState<LiveOpsContent | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -57,6 +58,12 @@ const LiveOpsGenerator: React.FC = () => {
     "Felt/Wool Art (粘毛风)",
     "Claymorphism (粘土风)",
     "Wooden (木头风)"
+  ];
+
+  const modelOptions = [
+    { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
+    { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' },
+    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 (专业绘图)' }
   ];
 
   const themeTemplates: Record<string, string[]> = {
@@ -112,6 +119,15 @@ const LiveOpsGenerator: React.FC = () => {
       alert("请填写游戏名称和活动主题");
       return;
     }
+
+    // Check if API key is selected for the paid model (gemini-3-pro-image-preview or imagen)
+    if ((window as any).aistudio && (selectedModel === 'gemini-3-pro-image-preview' || selectedModel.includes('imagen'))) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            await (window as any).aistudio.openSelectKey();
+        }
+    }
+
     setLoading(true);
     setResult(null);
     setGeneratedImage(null);
@@ -124,7 +140,16 @@ const LiveOpsGenerator: React.FC = () => {
       if (data.imagePrompt) {
         setGeneratingImage(true);
         // Extract just the style name for the API if needed, or pass full string
-        generateAdImage(data.imagePrompt, '16:9', artStyle, '', language, includeText, includeCharacters)
+        generateAdImage(
+            data.imagePrompt, 
+            '16:9', 
+            artStyle, 
+            '', 
+            language, 
+            includeText, 
+            includeCharacters,
+            selectedModel
+        )
           .then(({ imageUrl }) => {
             setGeneratedImage(imageUrl);
           })
@@ -237,19 +262,35 @@ const LiveOpsGenerator: React.FC = () => {
             />
           </div>
 
-          <div>
-             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-               <Palette className="w-3 h-3" /> 美术风格
-             </label>
-             <select 
-               value={artStyle}
-               onChange={(e) => setArtStyle(e.target.value)}
-               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-             >
-               {artStyles.map(style => (
-                 <option key={style} value={style}>{style}</option>
-               ))}
-             </select>
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Palette className="w-3 h-3" /> 美术风格
+               </label>
+               <select 
+                 value={artStyle}
+                 onChange={(e) => setArtStyle(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+               >
+                 {artStyles.map(style => (
+                   <option key={style} value={style}>{style}</option>
+                 ))}
+               </select>
+             </div>
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Cpu className="w-3 h-3" /> 生图模型
+               </label>
+               <select 
+                 value={selectedModel}
+                 onChange={(e) => setSelectedModel(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+               >
+                 {modelOptions.map(opt => (
+                   <option key={opt.value} value={opt.value}>{opt.label}</option>
+                 ))}
+               </select>
+             </div>
           </div>
 
           {/* Image Inclusion Toggles */}

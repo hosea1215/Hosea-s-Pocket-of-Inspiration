@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Zap, Loader2, Copy, Check, Link as LinkIcon, Shuffle, Target, Gift, RefreshCw, Activity, ArrowRight, FileText, BookOpen } from 'lucide-react';
+import { Zap, Loader2, Copy, Check, Link as LinkIcon, Shuffle, Target, Gift, RefreshCw, Activity, ArrowRight, FileText, BookOpen, Globe } from 'lucide-react';
 import { generateDopamineLoopAnalysis, analyzeGameplayFromUrl } from '../services/geminiService';
 import { researchExplanations } from '../constants';
 import { AppView, DopamineLoopResponse } from '../types';
@@ -16,6 +16,19 @@ const DopamineLoop: React.FC = () => {
   const [rewardMechanics, setRewardMechanics] = useState('连击音效、消除特效、高分记录、关卡宝箱、每日登录奖励');
   const [result, setResult] = useState<DopamineLoopResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
+
+  const languages = [
+    "Simplified Chinese (简体中文)",
+    "English (英文)",
+    "Traditional Chinese (繁体中文)",
+    "Japanese (日语)",
+    "Korean (韩语)",
+    "Spanish (西班牙语)",
+    "Portuguese (葡萄牙语)",
+    "German (德语)",
+    "French (法语)"
+  ];
 
   const handleGenerate = async () => {
     if (!gameName || !gameplay) {
@@ -25,7 +38,7 @@ const DopamineLoop: React.FC = () => {
     setLoading(true);
     setResult(null);
     try {
-      const data = await generateDopamineLoopAnalysis(gameName, gameplay, storeUrl, rewardMechanics);
+      const data = await generateDopamineLoopAnalysis(gameName, gameplay, storeUrl, rewardMechanics, language);
       setResult(data);
     } catch (error) {
       console.error(error);
@@ -131,6 +144,21 @@ const DopamineLoop: React.FC = () => {
               placeholder="例如：宝箱系统、连击音效、排行榜..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Globe className="w-3 h-3" /> 输出语言
+            </label>
+            <select 
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {languages.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
