@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, Download, RefreshCw, Palette, Box, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { Loader2, Download, RefreshCw, Palette, Box, Link as LinkIcon, Sparkles, Maximize2, X } from 'lucide-react';
 import { generateAppIcon, analyzeIconElementsFromUrl } from '../services/geminiService';
 import { AppIcon } from '../types';
 
@@ -13,6 +13,7 @@ const IconGenerator: React.FC = () => {
   const [elements, setElements] = useState('彩色方块，爆炸效果，简约风格');
   const [style, setStyle] = useState('3D Render (3D渲染)');
   const [generatedIcons, setGeneratedIcons] = useState<AppIcon[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Full Google Play Categories with Chinese Translations
   const googlePlayGenres = [
@@ -226,14 +227,23 @@ const IconGenerator: React.FC = () => {
           )}
 
           {generatedIcons.map((icon) => (
-            <div key={icon.id} className="group relative bg-slate-900 rounded-xl border border-slate-700/50 overflow-hidden hover:border-indigo-500/50 transition-all">
-              <div className="aspect-square w-full p-6 flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-950/50">
+            <div key={icon.id} className="group relative bg-slate-900 rounded-xl border border-slate-700/50 overflow-hidden hover:border-indigo-500/50 transition-all group/icon">
+              <div className="aspect-square w-full p-6 flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-950/50 relative">
                 {/* Icon Preview Container simulating Play Store shape */}
                 <div className="w-full h-full rounded-[22%] overflow-hidden shadow-2xl shadow-black/50 relative">
                    <img src={icon.imageUrl} alt="Generated Icon" className="w-full h-full object-cover" />
                    {/* Gloss effect overlay */}
                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none"></div>
                 </div>
+
+                {/* Maximize Button Overlay */}
+                <button 
+                  onClick={() => setPreviewImage(icon.imageUrl)}
+                  className="absolute top-2 right-2 p-2 bg-black/40 hover:bg-indigo-600 text-white rounded-full opacity-0 group-hover/icon:opacity-100 transition-all backdrop-blur-sm border border-white/10"
+                  title="全屏预览"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
               </div>
               
               <div className="p-4 bg-slate-800/80 backdrop-blur border-t border-slate-700">
@@ -254,6 +264,21 @@ const IconGenerator: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setPreviewImage(null)}>
+          <button className="absolute top-4 right-4 p-2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors" onClick={() => setPreviewImage(null)}>
+            <X className="w-6 h-6" />
+          </button>
+          <img 
+            src={previewImage} 
+            alt="Full Preview" 
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
     </div>
   );
 };

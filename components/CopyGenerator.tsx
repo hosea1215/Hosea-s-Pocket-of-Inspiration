@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Loader2, Languages, Copy, Check, Smile, Link as LinkIcon, Sparkles } from 'lucide-react';
-import { generateFacebookAdCopies, analyzeSellingPointsFromUrl } from '../services/geminiService';
+import { Loader2, Languages, Copy, Check, Smile, Link as LinkIcon, Sparkles, Image as ImageIcon, Download, PenTool, LayoutTemplate, Maximize2, X } from 'lucide-react';
+import { generateFacebookAdCopies, analyzeSellingPointsFromUrl, generateAdImage } from '../services/geminiService';
 import { CopyVariant } from '../types';
 
 const CopyGenerator: React.FC = () => {
@@ -12,11 +12,20 @@ const CopyGenerator: React.FC = () => {
   const [description, setDescription] = useState('彩色的PUZZLE BLOCK块，连击爽快感，等待的碎片时间玩这个游戏');
   const [targetLanguage, setTargetLanguage] = useState('English');
   const [includeEmojis, setIncludeEmojis] = useState(true);
+  const [copyStyle, setCopyStyle] = useState('General (通用)');
   const [results, setResults] = useState<CopyVariant[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
+  // Image Generation States
+  const [generatingImgId, setGeneratingImgId] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
+  // Store aspect ratio per card ID, default to 1:1 if not set
+  const [cardAspectRatios, setCardAspectRatios] = useState<Record<string, string>>({});
 
   const languages = [
     { value: 'English', label: 'English (英文)' },
+    { value: 'Simplified Chinese', label: 'Simplified Chinese (简体中文)' },
     { value: 'Traditional Chinese', label: 'Traditional Chinese (繁体中文)' },
     { value: 'Spanish', label: 'Spanish (西班牙语)' },
     { value: 'Portuguese', label: 'Portuguese (葡萄牙语)' },
@@ -27,18 +36,34 @@ const CopyGenerator: React.FC = () => {
     { value: 'Arabic', label: 'Arabic (阿拉伯语)' },
   ];
 
+  const copyStyles = [
+    "General (通用)",
+    "Urgent/FOMO (紧迫/错失恐惧)",
+    "Curiosity/Teaser (好奇/悬念)",
+    "Benefit-Driven (利益导向)",
+    "Social Proof (社会认同)",
+    "Storytelling (故事叙述)",
+    "Humorous (幽默有趣)",
+    "Professional (专业严肃)",
+    "Emotional (情感共鸣)",
+    "Short & Punchy (短促有力)"
+  ];
+
   const handleGenerate = async () => {
     if (!productName || !description) return;
     
     setLoading(true);
     setResults([]); // Clear previous results
+    setGeneratedImages({}); // Clear images
+    setCardAspectRatios({}); // Clear ratios
     try {
       const data = await generateFacebookAdCopies(
         productName,
         description,
         targetLanguage,
         includeEmojis,
-        storeUrl
+        storeUrl,
+        copyStyle
       );
       setResults(data);
     } catch (error) {
@@ -72,6 +97,52 @@ const CopyGenerator: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleAspectRatioChange = (id: string, ratio: string) => {
+    setCardAspectRatios(prev => ({ ...prev, [id]: ratio }));
+  };
+
+  const handleGenerateImage = async (id: string, copyText: string) => {
+    setGeneratingImgId(id);
+    const currentRatio = cardAspectRatios[id] || '1:1';
+
+    try {
+      // Construct a prompt that combines the specific copy with the general game description
+      // using the store description as visual context
+      const prompt = `Mobile Game Ad Creative for "${productName}". 
+      Ad Copy context: "${copyText}". 
+      Visual Style & Gameplay Context: ${description}`;
+
+      const { imageUrl } = await generateAdImage(
+        prompt,
+        currentRatio,
+        '3D Render', // Defaulting to high quality style
+        description, // Pass description as visual details which comes from store analysis
+        targetLanguage,
+        false, // Include text
+        true   // Include characters
+      );
+
+      setGeneratedImages(prev => ({
+        ...prev,
+        [id]: imageUrl
+      }));
+    } catch (error) {
+      console.error("Image generation failed", error);
+      alert("图片生成失败，请重试。");
+    } finally {
+      setGeneratingImgId(null);
+    }
+  };
+
+  const handleDownloadImage = (imageUrl: string, id: string) => {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `fb_ad_creative_${id}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex h-full gap-6">
       {/* Input Section */}
@@ -79,7 +150,7 @@ const CopyGenerator: React.FC = () => {
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Languages className="w-5 h-5 text-indigo-400" />
-            FB 文案配置
+            FACEBOOK广告文案
           </h2>
           <p className="text-sm text-slate-400 mt-1">批量生成符合 Facebook 广告规范的多语言文案。</p>
         </div>
@@ -116,6 +187,7 @@ const CopyGenerator: React.FC = () => {
                   onClick={handleAnalyzeSellingPoints}
                   disabled={analyzing}
                   className="text-[10px] bg-slate-700 hover:bg-indigo-600 text-white px-2 py-0.5 rounded flex items-center gap-1 transition-colors disabled:opacity-50"
+                  title="自动分析商店页面并提取卖点"
                 >
                   {analyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                   {analyzing ? '分析中' : 'AI 扩展填写'}
@@ -139,6 +211,21 @@ const CopyGenerator: React.FC = () => {
             >
               {languages.map(lang => (
                 <option key={lang.value} value={lang.value}>{lang.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <PenTool className="w-3 h-3" /> 文案风格
+            </label>
+            <select 
+              value={copyStyle}
+              onChange={(e) => setCopyStyle(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {copyStyles.map(style => (
+                <option key={style} value={style}>{style}</option>
               ))}
             </select>
           </div>
@@ -171,12 +258,19 @@ const CopyGenerator: React.FC = () => {
       {/* Output Section */}
       <div className="flex-1 bg-slate-800 rounded-xl p-6 border border-slate-700/50 flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-center mb-6">
-           <h2 className="text-xl font-bold text-white">生成的文案 ({results.length})</h2>
-           {results.length > 0 && (
-             <span className="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">
-               {targetLanguage}
-             </span>
-           )}
+           <div className="flex items-center gap-3">
+             <h2 className="text-xl font-bold text-white">生成的文案 ({results.length})</h2>
+             {results.length > 0 && (
+              <span className="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">
+                {targetLanguage}
+              </span>
+             )}
+             {results.length > 0 && (
+              <span className="text-xs bg-slate-700 text-slate-300 px-3 py-1 rounded-full border border-slate-600">
+                {copyStyle}
+              </span>
+             )}
+           </div>
         </div>
         
         <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -202,10 +296,10 @@ const CopyGenerator: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 pb-4">
             {results.map((item, index) => (
-              <div key={item.id} className="bg-slate-900 border border-slate-700/50 rounded-xl p-5 hover:border-indigo-500/50 transition-all group relative">
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div key={item.id} className="bg-slate-900 border border-slate-700/50 rounded-xl p-5 hover:border-indigo-500/50 transition-all group relative flex flex-col">
+                <div className="absolute top-4 right-4 z-10">
                   <button 
                     onClick={() => copyToClipboard(item.targetText, item.id)}
                     className="p-2 bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white rounded-lg border border-slate-700 transition-colors"
@@ -220,14 +314,83 @@ const CopyGenerator: React.FC = () => {
                   <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">{item.targetText}</p>
                 </div>
                 
-                <div className="pt-3 border-t border-slate-800 mt-2">
-                  <p className="text-xs text-slate-500 leading-relaxed">{item.sourceText}</p>
+                <div className="pt-3 border-t border-slate-800 mt-auto">
+                  <p className="text-xs text-slate-500 leading-relaxed mb-3">{item.sourceText}</p>
+                  
+                  {/* Image Generation Section */}
+                  <div className="bg-slate-950/50 rounded-lg p-2 border border-slate-800">
+                    <div className="flex items-center justify-between gap-2">
+                       {/* Aspect Ratio Selector */}
+                       <div className="flex items-center gap-1.5 flex-1 bg-slate-800 rounded px-2 py-1.5 border border-slate-700">
+                          <LayoutTemplate className="w-3 h-3 text-slate-400" />
+                          <select 
+                            value={cardAspectRatios[item.id] || '1:1'}
+                            onChange={(e) => handleAspectRatioChange(item.id, e.target.value)}
+                            className="bg-transparent text-[10px] text-white outline-none w-full cursor-pointer"
+                          >
+                            <option value="1:1">1:1 (方形)</option>
+                            <option value="9:16">9:16 (竖屏)</option>
+                            <option value="16:9">16:9 (横板)</option>
+                          </select>
+                       </div>
+
+                       {/* Generate Button */}
+                       <button 
+                          onClick={() => handleGenerateImage(item.id, item.targetText)}
+                          disabled={generatingImgId === item.id || !!generatedImages[item.id]}
+                          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white text-[10px] font-medium px-3 py-1.5 rounded transition-colors"
+                       >
+                          {generatingImgId === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                          {generatingImgId === item.id ? '生成中...' : generatedImages[item.id] ? '已生成' : '生成创意'}
+                       </button>
+                    </div>
+
+                    {/* Generated Image Preview */}
+                    {generatedImages[item.id] && (
+                      <div className="mt-3 relative group/image animate-in fade-in duration-500">
+                         <div className="rounded-lg overflow-hidden border border-slate-700/50 bg-black/20">
+                           <img src={generatedImages[item.id]} alt="Generated Ad Creative" className="w-full h-auto object-cover max-h-[250px]" />
+                         </div>
+                         <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover/image:opacity-100 transition-opacity">
+                           <button 
+                             onClick={() => setPreviewImage(generatedImages[item.id])}
+                             className="p-1.5 bg-black/60 hover:bg-indigo-600 text-white rounded-md backdrop-blur-md border border-white/10"
+                             title="全屏预览"
+                           >
+                             <Maximize2 className="w-3 h-3" />
+                           </button>
+                           <button 
+                             onClick={() => handleDownloadImage(generatedImages[item.id], item.id)}
+                             className="p-1.5 bg-black/60 hover:bg-indigo-600 text-white rounded-md backdrop-blur-md border border-white/10"
+                             title="下载图片"
+                           >
+                             <Download className="w-3 h-3" />
+                           </button>
+                         </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setPreviewImage(null)}>
+          <button className="absolute top-4 right-4 p-2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors" onClick={() => setPreviewImage(null)}>
+            <X className="w-6 h-6" />
+          </button>
+          <img 
+            src={previewImage} 
+            alt="Full Preview" 
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
     </div>
   );
 };

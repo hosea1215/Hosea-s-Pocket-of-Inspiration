@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
-import { Loader2, Trophy, Crosshair, Clock, BarChart, Layers, Zap, Target } from 'lucide-react';
-import { generateCpeEvents } from '../services/geminiService';
+import { Loader2, Trophy, Crosshair, Clock, BarChart, Layers, Zap, Target, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { generateCpeEvents, analyzeGameplayFromUrl } from '../services/geminiService';
 import { CpeEvent } from '../types';
 
 const CpeGenerator: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [gameName, setGameName] = useState('COLOR BLOCK');
   const [genre, setGenre] = useState('Puzzle (益智)');
+  const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
   const [gameplay, setGameplay] = useState('通过拖动不同形状的彩块填满行或列进行消除，类似俄罗斯方块，但没有重力下落。有关卡模式和无尽模式。');
   const [acquisitionGoal, setAcquisitionGoal] = useState('长期高频打开游戏玩关卡用户');
   const [singleEvents, setSingleEvents] = useState<CpeEvent[]>([]);
@@ -40,7 +42,25 @@ const CpeGenerator: React.FC = () => {
     }
   };
 
-  const getDifficultyColor = (diff: string) => {
+  const handleAnalyzeDescription = async () => {
+    if (!gameName || !storeUrl) {
+      alert("请确保已填写游戏名称和商店链接。");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const result = await analyzeGameplayFromUrl(gameName, storeUrl);
+      setGameplay(result);
+    } catch (error) {
+      console.error(error);
+      alert("分析失败，请重试。");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const getDifficultyColor = (diff: string | undefined) => {
+    if (!diff) return 'text-slate-400 bg-slate-400/10';
     switch (diff.toLowerCase()) {
       case 'easy': return 'text-green-400 bg-green-400/10 border-green-400/20';
       case 'medium': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
@@ -62,7 +82,7 @@ const CpeGenerator: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getDifficultyColor(event.difficulty)}`}>
-              {event.difficulty}
+              {event.difficulty || 'Unknown'}
             </span>
             <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-blue-400 bg-blue-400/10 border border-blue-400/20">
               <Clock className="w-3 h-3" />
@@ -91,7 +111,7 @@ const CpeGenerator: React.FC = () => {
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Trophy className="w-5 h-5 text-indigo-400" />
-            CPE 事件配置
+            买量事件生成器
           </h2>
           <p className="text-sm text-slate-400 mt-1">AI 智能规划 Cost Per Engagement 关键事件点。</p>
         </div>
@@ -105,6 +125,20 @@ const CpeGenerator: React.FC = () => {
               onChange={(e) => setGameName(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
             />
+          </div>
+
+          <div>
+             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏商店链接</label>
+             <div className="relative">
+               <input 
+                 type="text" 
+                 value={storeUrl}
+                 onChange={(e) => setStoreUrl(e.target.value)}
+                 placeholder="https://play.google.com/store/..."
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+               />
+               <LinkIcon className="absolute left-3 top-3.5 w-4 h-4 text-slate-500" />
+             </div>
           </div>
 
           <div>
@@ -134,7 +168,17 @@ const CpeGenerator: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">核心玩法描述</label>
+            <div className="flex justify-between items-center mb-2">
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">游戏描述</label>
+               <button 
+                  onClick={handleAnalyzeDescription}
+                  disabled={analyzing}
+                  className="text-[10px] bg-slate-700 hover:bg-indigo-600 text-white px-2 py-0.5 rounded flex items-center gap-1 transition-colors disabled:opacity-50"
+                >
+                  {analyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {analyzing ? '分析中' : '商店链接分析扩展'}
+                </button>
+            </div>
             <textarea 
               rows={6}
               value={gameplay}

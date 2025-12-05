@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Calculator, TrendingUp, TrendingDown, DollarSign, Clock, AlertCircle, Sparkles, Loader2, Users, Leaf, Bookmark, Copy, Check, Table as TableIcon, Target } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, DollarSign, Clock, AlertCircle, Sparkles, Loader2, Users, Leaf, Bookmark, Copy, Check, Table as TableIcon, Target, FileText } from 'lucide-react';
 import { EconomicMetrics } from '../types';
 import { analyzeGameEconomics } from '../services/geminiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, AreaChart, Area, ComposedChart, Bar } from 'recharts';
+import { exportToGoogleDocs } from '../utils/exportUtils';
 
 interface DailyOpData {
   day: number;
@@ -269,6 +270,11 @@ const LtvCalculator: React.FC = () => {
     navigator.clipboard.writeText(aiAnalysis);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExport = () => {
+    if (!aiAnalysis) return;
+    exportToGoogleDocs(aiAnalysis, `Economic Model Analysis`);
   };
 
   const formatCurrency = (val: number) => {
@@ -607,13 +613,23 @@ const LtvCalculator: React.FC = () => {
                   <Sparkles className="w-5 h-5" />
                   <h3 className="font-bold text-lg">AI 诊断报告</h3>
                </div>
-               <button 
-                  onClick={handleCopy}
-                  className={`bg-slate-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium ${copied ? 'bg-green-600 hover:bg-green-700' : ''}`}
-               >
-                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copied ? '已复制' : '复制内容'}
-               </button>
+               <div className="flex gap-2">
+                 <button 
+                    onClick={handleCopy}
+                    className={`bg-slate-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium ${copied ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                 >
+                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copied ? '已复制' : '复制内容'}
+                 </button>
+                 <button 
+                    onClick={handleExport}
+                    className="bg-slate-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium"
+                    title="复制并创建 Google 文档"
+                 >
+                    <FileText className="w-3 h-3" />
+                    导出到GOOGLE文档
+                 </button>
+               </div>
              </div>
              <div className="prose prose-invert prose-sm max-w-none">
                 <ReactMarkdown>{aiAnalysis}</ReactMarkdown>

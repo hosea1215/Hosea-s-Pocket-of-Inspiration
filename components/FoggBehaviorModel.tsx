@@ -1,39 +1,31 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Repeat, Loader2, Copy, Check, Zap, Link as LinkIcon, Target, Shuffle, Sparkles, FileText, BookOpen } from 'lucide-react';
-import { generateAbacrAnalysis, analyzeGameplayFromUrl, expandDesignPurpose } from '../services/geminiService';
+import { MousePointerClick, Loader2, Copy, Check, Link as LinkIcon, Shuffle, Zap, Activity, FileText, BookOpen } from 'lucide-react';
+import { generateFoggBehaviorAnalysis, analyzeGameplayFromUrl } from '../services/geminiService';
 import { researchExplanations } from '../constants';
 import { AppView } from '../types';
 import { exportToGoogleDocs } from '../utils/exportUtils';
 
-const AbacrLoop: React.FC = () => {
+const FoggBehaviorModel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [analyzingGameplay, setAnalyzingGameplay] = useState(false);
-  const [expandingPurpose, setExpandingPurpose] = useState(false);
   const [gameName, setGameName] = useState('COLOR BLOCK');
-  const [genre, setGenre] = useState('Puzzle (益智)');
-  const [gameplay, setGameplay] = useState('拖动彩色方块到网格中，填满行或列消除。没有时间限制，但网格填满后游戏结束。连击会有特殊音效。一次消除多行多列或者清空所有色块会有额外的奖励。在这个过程中如何设计插屏广告与激励视频让用户保持心流体验的同时能取得更高的长期收入？');
   const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
-  const [designPurpose, setDesignPurpose] = useState('增强用户游玩的心流体验，提升产品长期留存，让用户对产品产生挂念感。在这个过程中如何设计插屏广告与激励视频让用户保持心流体验的同时能取得更高的长期收入？');
+  const [gameplay, setGameplay] = useState('通过拖动不同形状的彩块填满行或列进行消除，类似俄罗斯方块。');
+  const [targetAudience, setTargetAudience] = useState('休闲玩家，喜欢解压，碎片时间游戏');
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Full Google Play Categories with Chinese Translations
-  const googlePlayGenres = [
-    "Action (动作)", "Adventure (冒险)", "Arcade (街机)", "Board (棋类)", 
-    "Card (卡牌)", "Casino (博彩)", "Casual (休闲)", "Educational (教育)", 
-    "Music (音乐)", "Puzzle (益智)", "Racing (赛车)", "Role Playing (角色扮演)", 
-    "Simulation (模拟)", "Sports (体育)", "Strategy (策略)", "Trivia (问答)", 
-    "Word (文字)"
-  ];
-
   const handleGenerate = async () => {
-    if (!gameName || !gameplay) return;
+    if (!gameName || !gameplay) {
+      alert("请填写游戏名称和玩法描述");
+      return;
+    }
     setLoading(true);
     setAnalysis(null);
     try {
-      const result = await generateAbacrAnalysis(gameName, genre, gameplay, storeUrl, designPurpose);
+      const result = await generateFoggBehaviorAnalysis(gameName, gameplay, storeUrl, targetAudience);
       setAnalysis(result);
     } catch (error) {
       console.error(error);
@@ -60,20 +52,6 @@ const AbacrLoop: React.FC = () => {
     }
   };
 
-  const handleExpandPurpose = async () => {
-    if (!designPurpose || !gameName) return;
-    setExpandingPurpose(true);
-    try {
-      const result = await expandDesignPurpose(designPurpose, gameName);
-      setDesignPurpose(result);
-    } catch (error) {
-      console.error(error);
-      alert("扩展失败，请重试。");
-    } finally {
-      setExpandingPurpose(false);
-    }
-  };
-
   const handleCopy = () => {
     if (!analysis) return;
     navigator.clipboard.writeText(analysis);
@@ -83,7 +61,7 @@ const AbacrLoop: React.FC = () => {
 
   const handleExport = () => {
     if (!analysis) return;
-    exportToGoogleDocs(analysis, `ABACR Model Analysis - ${gameName}`);
+    exportToGoogleDocs(analysis, `FBM Analysis - ${gameName}`);
   };
 
   return (
@@ -92,10 +70,10 @@ const AbacrLoop: React.FC = () => {
       <div className="w-1/3 bg-slate-800 rounded-xl p-6 border border-slate-700/50 flex flex-col shrink-0">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Repeat className="w-5 h-5 text-indigo-400" />
-            A-B-A-C-R 游戏循环结构
+            <MousePointerClick className="w-5 h-5 text-indigo-400" />
+            Fogg 行为模型 (FBM)
           </h2>
-          <p className="text-sm text-slate-400 mt-1">深度解构游戏的核心上瘾循环模型。</p>
+          <p className="text-sm text-slate-400 mt-1">行为发生 = 动机 (M) + 能力 (A) + 触发 (P)。</p>
         </div>
 
         <div className="space-y-5 flex-1 overflow-y-auto custom-scrollbar">
@@ -124,43 +102,18 @@ const AbacrLoop: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏类型 (Google Play)</label>
-            <select 
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">目标受众</label>
+            <input 
+              type="text" 
+              value={targetAudience}
+              onChange={(e) => setTargetAudience(e.target.value)}
+              placeholder="例如：18-24岁，喜欢竞技..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {googlePlayGenres.map(g => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-2">
-               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                 设计目的 <Target className="w-3 h-3 text-indigo-400" />
-               </label>
-               <button 
-                  onClick={handleExpandPurpose}
-                  disabled={expandingPurpose}
-                  className="text-[10px] bg-slate-700 hover:bg-indigo-600 text-white px-2 py-0.5 rounded flex items-center gap-1 transition-colors disabled:opacity-50"
-                >
-                  {expandingPurpose ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  {expandingPurpose ? '扩展中' : 'AI 扩展填入'}
-                </button>
-            </div>
-            <textarea 
-              rows={5}
-              value={designPurpose}
-              onChange={(e) => setDesignPurpose(e.target.value)}
-              placeholder="例如：提升用户留存，增强心流体验..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
           </div>
 
           <div>
-             <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-2">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">核心玩法描述</label>
                 <button 
                   onClick={handleAnalyzeGameplay}
@@ -170,26 +123,24 @@ const AbacrLoop: React.FC = () => {
                   {analyzingGameplay ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shuffle className="w-3 h-3" />}
                   {analyzingGameplay ? '分析中' : 'AI 分析填入'}
                 </button>
-             </div>
+            </div>
             <textarea 
-              rows={5}
+              rows={6}
               value={gameplay}
               onChange={(e) => setGameplay(e.target.value)}
-              placeholder="详细描述游戏的操作方式、反馈机制和胜利条件..."
+              placeholder="详细描述游戏的操作方式、循环机制..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
              <h4 className="text-indigo-300 font-bold text-xs mb-2 flex items-center gap-1">
-               <Zap className="w-3 h-3" /> 关卡设计模式说明
+               <Activity className="w-3 h-3" /> FBM 核心要素 (B=MAP)
              </h4>
              <ul className="text-xs text-slate-400 space-y-2 list-none pl-1">
-               <li className="mb-1"><strong className="text-slate-200 block mb-0.5">A (基础关):</strong> 教学与巩固 - 介绍核心机制，难度适中，玩家熟悉游戏</li>
-               <li className="mb-1"><strong className="text-slate-200 block mb-0.5">B (变化关):</strong> 拓展与挑战 - 在 A 基础上增加新元素，难度提升</li>
-               <li className="mb-1"><strong className="text-slate-200 block mb-0.5">A (复习关):</strong> 强化与反馈 - 再次应用 A 的机制，但结合 B 的元素，加深理解</li>
-               <li className="mb-1"><strong className="text-slate-200 block mb-0.5">C (综合关):</strong> 考验与突破 - 整合 A、B 所有机制，设置高难度挑战</li>
-               <li className="mb-1"><strong className="text-slate-200 block mb-0.5">R (奖励关):</strong> 放松与激励 - 提供轻松体验和丰厚奖励，为下一循环做准备</li>
+               <li className="flex items-start gap-1"><span className="text-indigo-400 font-bold">M</span> <span>Motivation (动机): 感觉、预期、归属</span></li>
+               <li className="flex items-start gap-1"><span className="text-indigo-400 font-bold">A</span> <span>Ability (能力): 时间、金钱、体力、脑力...</span></li>
+               <li className="flex items-start gap-1"><span className="text-indigo-400 font-bold">P</span> <span>Prompt (触发): 信号、辅助、火花</span></li>
              </ul>
           </div>
         </div>
@@ -199,8 +150,8 @@ const AbacrLoop: React.FC = () => {
           disabled={loading}
           className="mt-6 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-900/50"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Repeat className="w-5 h-5" />}
-          {loading ? '结构分析中...' : '生成循环分析'}
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <MousePointerClick className="w-5 h-5" />}
+          {loading ? '正在分析行为曲线...' : '生成 FBM 分析'}
         </button>
       </div>
 
@@ -209,7 +160,7 @@ const AbacrLoop: React.FC = () => {
         {analysis ? (
           <>
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
-              <h2 className="text-xl font-bold text-white">A-B-A-C-R 模型分析报告</h2>
+              <h2 className="text-xl font-bold text-white">Fogg 行为模型分析报告</h2>
               <div className="flex gap-2">
                 <button 
                   onClick={handleCopy}
@@ -233,10 +184,10 @@ const AbacrLoop: React.FC = () => {
             <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4 mb-6">
               <h4 className="text-slate-200 font-bold text-sm mb-2 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-indigo-400" />
-                理论基础：{researchExplanations[AppView.ABACR_LOOP].title}
+                理论基础：{researchExplanations[AppView.FOGG_BEHAVIOR_MODEL].title}
               </h4>
               <p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">
-                {researchExplanations[AppView.ABACR_LOOP].content}
+                {researchExplanations[AppView.FOGG_BEHAVIOR_MODEL].content}
               </p>
             </div>
 
@@ -247,10 +198,10 @@ const AbacrLoop: React.FC = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-slate-500">
              <div className="w-20 h-20 bg-slate-800/50 rounded-2xl flex items-center justify-center mb-4 border border-slate-700 shadow-inner">
-               <Repeat className="w-10 h-10 text-slate-600" />
+               <MousePointerClick className="w-10 h-10 text-slate-600" />
              </div>
-             <p className="text-lg font-medium">游戏循环解构</p>
-             <p className="text-sm max-w-xs text-center mt-2">输入玩法细节，AI 将深度剖析游戏的关卡编排与节奏控制。</p>
+             <p className="text-lg font-medium">FBM 行为解构</p>
+             <p className="text-sm max-w-xs text-center mt-2">分析用户的 动机、能力 和 触发机制，优化行为转化率。</p>
           </div>
         )}
       </div>
@@ -258,4 +209,4 @@ const AbacrLoop: React.FC = () => {
   );
 };
 
-export default AbacrLoop;
+export default FoggBehaviorModel;

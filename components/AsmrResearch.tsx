@@ -1,8 +1,11 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Headphones, Sparkles, Volume2, Link as LinkIcon, Copy, Check, Loader2 } from 'lucide-react';
+import { Headphones, Sparkles, Volume2, Link as LinkIcon, Copy, Check, Loader2, FileText, BookOpen } from 'lucide-react';
 import { generateAsmrPlan } from '../services/geminiService';
+import { researchExplanations } from '../constants';
+import { AppView } from '../types';
+import { exportToGoogleDocs } from '../utils/exportUtils';
 
 const AsmrResearch: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -32,6 +35,11 @@ const AsmrResearch: React.FC = () => {
     navigator.clipboard.writeText(plan);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExport = () => {
+    if (!plan) return;
+    exportToGoogleDocs(plan, `ASMR Marketing Plan - ${gameName}`);
   };
 
   // Full Google Play Categories with Chinese Translations
@@ -131,14 +139,36 @@ const AsmrResearch: React.FC = () => {
           <>
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
               <h2 className="text-xl font-bold text-white">ASMR 听觉营销方案</h2>
-              <button 
-                onClick={handleCopy}
-                className={`bg-slate-700 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${copied ? 'bg-green-600 hover:bg-green-700' : ''}`}
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? '已复制' : '复制内容'}
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleCopy}
+                  className={`bg-slate-700 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${copied ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? '已复制' : '复制内容'}
+                </button>
+                <button 
+                  onClick={handleExport}
+                  className="bg-slate-700 hover:bg-blue-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                  title="复制并创建 Google 文档"
+                >
+                  <FileText className="w-4 h-4" />
+                  导出到GOOGLE文档
+                </button>
+              </div>
             </div>
+
+            {/* Theory Explanation Block */}
+            <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4 mb-6">
+              <h4 className="text-slate-200 font-bold text-sm mb-2 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-indigo-400" />
+                理论基础：{researchExplanations[AppView.ASMR_RESEARCH].title}
+              </h4>
+              <p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">
+                {researchExplanations[AppView.ASMR_RESEARCH].content}
+              </p>
+            </div>
+
             <div className="prose prose-invert prose-indigo max-w-none overflow-y-auto pr-4 custom-scrollbar">
                <ReactMarkdown>{plan}</ReactMarkdown>
             </div>

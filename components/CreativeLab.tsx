@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Image as ImageIcon, Copy, Check, Palette, Globe, MoreHorizontal, ThumbsUp, MessageCircle, Share2, PenTool, Link as LinkIcon, Download, LayoutTemplate, Shuffle } from 'lucide-react';
+import { Sparkles, Loader2, Image as ImageIcon, Copy, Check, Palette, Globe, MoreHorizontal, ThumbsUp, MessageCircle, Share2, PenTool, Link as LinkIcon, Download, LayoutTemplate, Shuffle, FileText, Languages, Maximize2, X, Type, User, Cpu } from 'lucide-react';
 import { generateAdCopy, generateAdImage, analyzeVisualDetailsFromUrl } from '../services/geminiService';
 import { AdCreative } from '../types';
 
@@ -16,8 +16,13 @@ const CreativeLab: React.FC = () => {
   const [selectedStyle, setSelectedStyle] = useState('3D Render');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const [includeText, setIncludeText] = useState(false);
+  const [includeCharacters, setIncludeCharacters] = useState(true);
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash-image');
   const [generatedCreatives, setGeneratedCreatives] = useState<AdCreative[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const ctaOptions = [
     "立即下载",
@@ -27,6 +32,12 @@ const CreativeLab: React.FC = () => {
     "立即购买",
     "领取奖励",
     "免费试玩"
+  ];
+
+  const modelOptions = [
+    { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
+    { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' },
+    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 (专业绘图)' }
   ];
 
   const styleOptions = [
@@ -40,13 +51,21 @@ const CreativeLab: React.FC = () => {
     { value: 'Oil Painting', label: '油画 (Oil Painting)' },
     { value: 'Watercolor', label: '水彩 (Watercolor)' },
     { value: 'Sketch', label: '素描 (Sketch)' },
-    { value: 'Low Poly', label: '低多边形 (Low Poly)' }
+    { value: 'Low Poly', label: '低多边形 (Low Poly)' },
+    { value: 'Disney Style', label: '迪斯尼 (Disney)' },
+    { value: 'Pixar Style', label: '皮克斯 (Pixar)' },
+    { value: 'Studio Ghibli', label: '宫崎骏 (Studio Ghibli)' },
+    { value: 'Medieval Fantasy', label: '中世纪 (Medieval)' },
+    { value: 'Felt/Wool Art', label: '粘毛风 (Felt/Wool Art)' },
+    { value: 'Claymorphism', label: '粘土风 (Claymorphism)' },
+    { value: 'Wooden', label: '木头风 (Wooden)' }
   ];
 
   const aspectRatioOptions = [
-    { value: '1:1', label: '方形 (1:1)' },
-    { value: '9:16', label: '竖屏 (9:16)' },
-    { value: '16:9', label: '横幅 (16:9)' }
+    { value: '1:1', label: '1:1 - 动态消息/轮播/右边栏 (1080x1080)' },
+    { value: '4:5', label: '4:5 - 动态消息[垂直] (1080x1350)' },
+    { value: '9:16', label: '9:16 - Stories/快拍/Reels (1080x1920)' },
+    { value: '1.91:1', label: '1.91:1 - 链接贴文/信息流单图 (1200x628)' }
   ];
 
   const languageOptions = [
@@ -66,6 +85,14 @@ const CreativeLab: React.FC = () => {
   ];
 
   const handleGenerate = async () => {
+    // Check if API key is selected for the paid model (gemini-3-pro-image-preview)
+    if ((window as any).aistudio) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            await (window as any).aistudio.openSelectKey();
+        }
+    }
+
     setLoading(true);
     setLoadingStage('正在分析创意需求...');
 
@@ -76,7 +103,10 @@ const CreativeLab: React.FC = () => {
         aspectRatio,
         selectedStyle,
         visualDetails,
-        selectedLanguage
+        selectedLanguage,
+        includeText,
+        includeCharacters,
+        selectedModel
       );
       const copyPromise = generateAdCopy({ 
         name: gameName, 
@@ -92,7 +122,7 @@ const CreativeLab: React.FC = () => {
 
       // Update stage for image generation (usually takes longest)
       setLoadingStage('正在生成营销视觉图像...');
-      const imageData = await imagePromise;
+      const imageResult = await imagePromise;
 
       // Update stage for copy generation
       setLoadingStage('正在撰写高转化广告文案...');
@@ -102,7 +132,9 @@ const CreativeLab: React.FC = () => {
 
       const newCreative: AdCreative = {
         id: Date.now().toString(),
-        imageUrl: imageData,
+        imageUrl: imageResult.imageUrl,
+        imagePrompt: imageResult.prompt,
+        imagePromptZh: imageResult.promptZh,
         copy: copyData.body,
         headline: copyData.headline,
         cta: copyData.cta
@@ -119,13 +151,17 @@ const CreativeLab: React.FC = () => {
   };
 
   const handleAnalyzeVisualDetails = async () => {
-    if (!gameName) return;
+    if (!storeUrl) {
+      alert("请填写商店链接以进行分析。");
+      return;
+    }
     setGeneratingDetails(true);
     try {
       const details = await analyzeVisualDetailsFromUrl(gameName, storeUrl);
       setVisualDetails(details);
     } catch (error) {
       console.error(error);
+      alert("分析失败，请重试。");
     } finally {
       setGeneratingDetails(false);
     }
@@ -135,6 +171,13 @@ const CreativeLab: React.FC = () => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCopyPrompt = (text: string | undefined, id: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedPromptId(id);
+    setTimeout(() => setCopiedPromptId(null), 2000);
   };
 
   const handleDownloadImage = (imageUrl: string, id: string) => {
@@ -153,7 +196,7 @@ const CreativeLab: React.FC = () => {
         <div className="mb-2">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <LayoutTemplate className="w-5 h-5 text-indigo-400" />
-            创意配置
+            FACEBOOK图文广告创意
           </h2>
           <p className="text-sm text-slate-400 mt-1">配置 AI 参数以生成高点击率广告。</p>
         </div>
@@ -168,24 +211,40 @@ const CreativeLab: React.FC = () => {
           />
         </div>
 
-        <div>
-           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-             <Globe className="w-3 h-3" /> 输出语言 (Output Language)
-           </label>
-           <select 
-             value={selectedLanguage}
-             onChange={(e) => setSelectedLanguage(e.target.value)}
-             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-           >
-             {languageOptions.map(opt => (
-               <option key={opt.value} value={opt.value}>{opt.label}</option>
-             ))}
-           </select>
+        <div className="grid grid-cols-2 gap-4">
+           <div>
+             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Globe className="w-3 h-3" /> 输出语言
+             </label>
+             <select 
+               value={selectedLanguage}
+               onChange={(e) => setSelectedLanguage(e.target.value)}
+               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+             >
+               {languageOptions.map(opt => (
+                 <option key={opt.value} value={opt.value}>{opt.label}</option>
+               ))}
+             </select>
+           </div>
+           <div>
+             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Cpu className="w-3 h-3" /> 生图模型
+             </label>
+             <select 
+               value={selectedModel}
+               onChange={(e) => setSelectedModel(e.target.value)}
+               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+             >
+               {modelOptions.map(opt => (
+                 <option key={opt.value} value={opt.value}>{opt.label}</option>
+               ))}
+             </select>
+           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">素材比例</label>
+             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">素材版位与比例</label>
              <select 
                value={aspectRatio}
                onChange={(e) => setAspectRatio(e.target.value)}
@@ -210,6 +269,30 @@ const CreativeLab: React.FC = () => {
                ))}
              </select>
           </div>
+        </div>
+
+        {/* Image Inclusion Toggles */}
+        <div className="grid grid-cols-2 gap-3 bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+             <div className="flex items-center justify-between">
+                <label className="text-xs text-slate-400 flex items-center gap-1.5 cursor-pointer">
+                  <Type className="w-3.5 h-3.5" />
+                  <span>包含文字</span>
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={includeText} onChange={(e) => setIncludeText(e.target.checked)} className="sr-only peer" />
+                  <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+             </div>
+             <div className="flex items-center justify-between">
+                <label className="text-xs text-slate-400 flex items-center gap-1.5 cursor-pointer">
+                  <User className="w-3.5 h-3.5" />
+                  <span>包含人物/动物</span>
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={includeCharacters} onChange={(e) => setIncludeCharacters(e.target.checked)} className="sr-only peer" />
+                  <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+             </div>
         </div>
 
         <div>
@@ -346,14 +429,23 @@ const CreativeLab: React.FC = () => {
                 {/* Image Area */}
                 <div className="w-full bg-black relative group flex justify-center bg-[#18191a]">
                    <img src={creative.imageUrl} alt="Ad Visual" className="w-full h-auto object-contain max-h-[500px]" />
-                   {/* Download Button Overlay */}
-                   <button 
-                     onClick={() => handleDownloadImage(creative.imageUrl, creative.id)}
-                     className="absolute bottom-3 right-3 p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all backdrop-blur-md border border-white/10 shadow-lg"
-                     title="保存图片"
-                   >
-                     <Download className="w-4 h-4" />
-                   </button>
+                   {/* Action Buttons Overlay */}
+                   <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                     <button 
+                       onClick={() => setPreviewImage(creative.imageUrl)}
+                       className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg"
+                       title="全屏预览"
+                     >
+                       <Maximize2 className="w-4 h-4" />
+                     </button>
+                     <button 
+                       onClick={() => handleDownloadImage(creative.imageUrl, creative.id)}
+                       className="p-2 bg-black/60 hover:bg-indigo-600 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg"
+                       title="保存图片"
+                     >
+                       <Download className="w-4 h-4" />
+                     </button>
+                   </div>
                 </div>
 
                 {/* Headline & CTA Bar */}
@@ -379,11 +471,52 @@ const CreativeLab: React.FC = () => {
                        <Share2 className="w-4 h-4" /> <span>Share</span>
                     </button>
                 </div>
+
+                {/* Prompt Section */}
+                {creative.imagePrompt && (
+                  <div className="p-3 bg-black/20 text-xs text-slate-500 border-t border-slate-700/30">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold flex items-center gap-1 text-indigo-300"><FileText className="w-3 h-3" /> 提示词 (Prompt):</span>
+                      <button 
+                        onClick={() => handleCopyPrompt(creative.imagePrompt, creative.id)}
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${copiedPromptId === creative.id ? 'text-green-400' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                      >
+                        {copiedPromptId === creative.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedPromptId === creative.id ? '已复制' : '复制英文'}</span>
+                      </button>
+                    </div>
+                    <p className="font-mono leading-relaxed mb-3 text-slate-300 bg-black/20 p-2 rounded border border-white/5 select-all">
+                      {creative.imagePrompt}
+                    </p>
+                    
+                    {creative.imagePromptZh && (
+                        <div className="mt-2 pt-2 border-t border-white/5">
+                            <span className="font-bold flex items-center gap-1 text-slate-400 mb-1"><Languages className="w-3 h-3" /> 中文释义:</span>
+                            <p className="font-mono leading-relaxed text-slate-400 select-all">{creative.imagePromptZh}</p>
+                        </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setPreviewImage(null)}>
+          <button className="absolute top-4 right-4 p-2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors" onClick={() => setPreviewImage(null)}>
+            <X className="w-6 h-6" />
+          </button>
+          <img 
+            src={previewImage} 
+            alt="Full Preview" 
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
     </div>
   );
 };

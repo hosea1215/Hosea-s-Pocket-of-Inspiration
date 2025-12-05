@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, Zap, Send, Link as LinkIcon, Copy, Check, Search } from 'lucide-react';
+import { Loader2, Zap, Send, Link as LinkIcon, Copy, Check, Search, FileText } from 'lucide-react';
 import { GameDetails } from '../types';
 import { generateMarketingPlan, generateAsoAnalysis } from '../services/geminiService';
+import { exportToGoogleDocs } from '../utils/exportUtils';
 
 const StrategyGenerator: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -64,6 +65,11 @@ const StrategyGenerator: React.FC = () => {
     navigator.clipboard.writeText(plan);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExport = () => {
+    if (!plan) return;
+    exportToGoogleDocs(plan, `Marketing Strategy - ${details.name}`);
   };
 
   // Full Google Play Categories with Chinese Translations
@@ -248,6 +254,14 @@ const StrategyGenerator: React.FC = () => {
                  >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   {copied ? '已复制' : '复制内容'}
+                </button>
+                <button 
+                  onClick={handleExport}
+                  className="bg-slate-700 hover:bg-blue-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                  title="复制并创建 Google 文档"
+                >
+                  <FileText className="w-4 h-4" />
+                  导出到GOOGLE文档
                 </button>
               </div>
             </div>
