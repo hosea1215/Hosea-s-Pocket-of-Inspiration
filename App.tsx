@@ -26,11 +26,14 @@ import LiveOpsGenerator from './components/LiveOpsGenerator';
 import AsoKeywords from './components/AsoKeywords';
 import IaaMonetization from './components/IaaMonetization';
 import IapMonetization from './components/IapMonetization';
+import AdBiddingStrategy from './components/AdBiddingStrategy';
+import IapPricingDesign from './components/IapPricingDesign';
 import GooglePlayNews from './components/GooglePlayNews';
 import AppStoreNews from './components/AppStoreNews';
 import AdTechNews from './components/AdTechNews';
+import MarketingCalendar from './components/MarketingCalendar';
 import { AppView } from './types';
-import { Search, Megaphone, Zap, BarChart2 } from 'lucide-react';
+import { Search, Megaphone, Zap, BarChart2, Smartphone, Music } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.STRATEGY);
@@ -38,11 +41,21 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case AppView.STRATEGY:
-        return <StrategyGenerator />;
+        return <StrategyGenerator platform="Facebook" />;
+      case AppView.GOOGLE_ADS_STRATEGY:
+        return <StrategyGenerator platform="Google Ads" />;
+      case AppView.TIKTOK_ADS_STRATEGY:
+        return <StrategyGenerator platform="TikTok Ads" />;
+      case AppView.APPLE_ADS_STRATEGY:
+        return <StrategyGenerator platform="Apple Search Ads" />;
+      case AppView.APPLOVIN_STRATEGY:
+        return <StrategyGenerator platform="AppLovin" />;
       case AppView.ASO_KEYWORDS:
         return <AsoKeywords />;
       case AppView.CPE_GEN:
         return <CpeGenerator />;
+      case AppView.MARKETING_CALENDAR:
+        return <MarketingCalendar />;
       case AppView.CREATIVE:
         return <CreativeLab />;
       case AppView.ICON_GEN:
@@ -85,8 +98,12 @@ const App: React.FC = () => {
         return <LiveOpsGenerator />;
       case AppView.IAA_MONETIZATION:
         return <IaaMonetization />;
+      case AppView.IAA_BIDDING:
+        return <AdBiddingStrategy />;
       case AppView.IAP_MONETIZATION:
         return <IapMonetization />;
+      case AppView.IAP_PRICING:
+        return <IapPricingDesign />;
       case AppView.GOOGLE_PLAY_NEWS:
         return <GooglePlayNews />;
       case AppView.APPSTORE_NEWS:
@@ -95,6 +112,12 @@ const App: React.FC = () => {
         return <AdTechNews platform="Google Ads" icon={Search} />;
       case AppView.FACEBOOK_ADS_NEWS:
         return <AdTechNews platform="Facebook Ads" icon={Megaphone} />;
+      case AppView.ADMOB_NEWS:
+        return <AdTechNews platform="AdMob" icon={Smartphone} />;
+      case AppView.TIKTOK_ADS_NEWS:
+        return <AdTechNews platform="TikTok Ads" icon={Music} />;
+      case AppView.APPLE_SEARCH_ADS_NEWS:
+        return <AdTechNews platform="Apple Search Ads" icon={Search} />;
       case AppView.APPLOVIN_NEWS:
         return <AdTechNews platform="AppLovin" icon={Zap} />;
       case AppView.APPSFLYER_NEWS:
@@ -102,15 +125,20 @@ const App: React.FC = () => {
       case AppView.SETTINGS:
         return <div className="text-white">设置 (占位符)</div>;
       default:
-        return <StrategyGenerator />;
+        return <StrategyGenerator platform="Facebook" />;
     }
   };
 
   const getHeaderTitle = () => {
     switch (currentView) {
-      case AppView.STRATEGY: return 'FB广告策略生成器';
+      case AppView.STRATEGY: return 'FACEBOOK广告策略';
+      case AppView.GOOGLE_ADS_STRATEGY: return 'GOOGLE ADS广告策略';
+      case AppView.TIKTOK_ADS_STRATEGY: return 'TIKTOK ADS广告策略';
+      case AppView.APPLE_ADS_STRATEGY: return 'APPLE ADS广告策略';
+      case AppView.APPLOVIN_STRATEGY: return 'APPLOVIN广告策略';
       case AppView.ASO_KEYWORDS: return 'ASO 关键词分析';
       case AppView.CPE_GEN: return '买量事件生成器';
+      case AppView.MARKETING_CALENDAR: return '主要国家营销日历';
       case AppView.CREATIVE: return 'FACEBOOK图文广告创意';
       case AppView.ICON_GEN: return '谷歌商店ICON生成';
       case AppView.COPY_GEN: return 'FACEBOOK广告文案';
@@ -132,15 +160,20 @@ const App: React.FC = () => {
       case AppView.PUSH_STRATEGY: return '游戏通知PUSH策略';
       case AppView.LIVEOPS_GEN: return 'GooglePlay LiveOps物料';
       case AppView.IAA_MONETIZATION: return 'IAA游戏商业化方案';
+      case AppView.IAA_BIDDING: return '广告变现竞价设计';
       case AppView.IAP_MONETIZATION: return 'IAP游戏商业化方案';
+      case AppView.IAP_PRICING: return '内购计费组合设计';
       case AppView.GOOGLE_PLAY_NEWS: return 'GOOGLE PLAY最新资讯';
       case AppView.APPSTORE_NEWS: return 'APPSTORE最新资讯';
       case AppView.GOOGLE_ADS_NEWS: return 'GOOGLE ADS最新资讯';
       case AppView.FACEBOOK_ADS_NEWS: return 'FACEBOOK ADS最新资讯';
+      case AppView.ADMOB_NEWS: return 'ADMOB最新资讯';
+      case AppView.TIKTOK_ADS_NEWS: return 'TIKTOK ADS最新资讯';
+      case AppView.APPLE_SEARCH_ADS_NEWS: return 'APPLE SEARCH ADS最新资讯';
       case AppView.APPLOVIN_NEWS: return 'APPLOVIN最新资讯';
       case AppView.APPSFLYER_NEWS: return 'APPSFLYER最新资讯';
       case AppView.SETTINGS: return '设置';
-      default: return 'FB广告策略生成器';
+      default: return 'FACEBOOK广告策略';
     }
   };
 

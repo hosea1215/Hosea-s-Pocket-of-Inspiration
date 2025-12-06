@@ -1,6 +1,10 @@
 
 export enum AppView {
-  STRATEGY = 'STRATEGY',
+  STRATEGY = 'STRATEGY', // Defaults to Facebook
+  GOOGLE_ADS_STRATEGY = 'GOOGLE_ADS_STRATEGY',
+  TIKTOK_ADS_STRATEGY = 'TIKTOK_ADS_STRATEGY',
+  APPLE_ADS_STRATEGY = 'APPLE_ADS_STRATEGY',
+  APPLOVIN_STRATEGY = 'APPLOVIN_STRATEGY',
   ASO_KEYWORDS = 'ASO_KEYWORDS',
   CREATIVE = 'CREATIVE',
   ICON_GEN = 'ICON_GEN',
@@ -24,13 +28,19 @@ export enum AppView {
   PUSH_STRATEGY = 'PUSH_STRATEGY',
   LIVEOPS_GEN = 'LIVEOPS_GEN',
   IAA_MONETIZATION = 'IAA_MONETIZATION',
+  IAA_BIDDING = 'IAA_BIDDING',
   IAP_MONETIZATION = 'IAP_MONETIZATION',
+  IAP_PRICING = 'IAP_PRICING',
   GOOGLE_PLAY_NEWS = 'GOOGLE_PLAY_NEWS',
   APPSTORE_NEWS = 'APPSTORE_NEWS',
   GOOGLE_ADS_NEWS = 'GOOGLE_ADS_NEWS',
   FACEBOOK_ADS_NEWS = 'FACEBOOK_ADS_NEWS',
   APPLOVIN_NEWS = 'APPLOVIN_NEWS',
   APPSFLYER_NEWS = 'APPSFLYER_NEWS',
+  ADMOB_NEWS = 'ADMOB_NEWS',
+  TIKTOK_ADS_NEWS = 'TIKTOK_ADS_NEWS',
+  APPLE_SEARCH_ADS_NEWS = 'APPLE_SEARCH_ADS_NEWS',
+  MARKETING_CALENDAR = 'MARKETING_CALENDAR',
   SETTINGS = 'SETTINGS'
 }
 
@@ -280,4 +290,14 @@ export interface NarrativeScore {
 export interface NarrativeResponse {
   scores: NarrativeScore;
   analysis: string;
+}
+
+export interface MarketingCalendarData {
+  month: string;
+  intensity: number; // 0-100 marketing heat/activity level
+  keyEvent: string;
+  count: number;
+  historicalRoas?: number; // Estimated historical ROAS for this period
+  historicalCtr?: number; // Estimated historical CTR for this period
+  pastCampaignInsight?: string; // Analysis of why this month performed well/poorly historically
 }

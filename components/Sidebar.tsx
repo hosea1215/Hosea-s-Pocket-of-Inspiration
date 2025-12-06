@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -40,21 +40,31 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   // Items to be grouped under "Product Monetization" (Moved Above Growth)
   const monetizationNavItems = [
     { id: AppView.IAA_MONETIZATION, label: 'IAA游戏商业化方案', icon: MonitorPlay },
+    { id: AppView.IAA_BIDDING, label: '广告变现竞价设计', icon: Gavel },
     { id: AppView.IAP_MONETIZATION, label: 'IAP游戏商业化方案', icon: Gem },
+    { id: AppView.IAP_PRICING, label: '内购计费组合设计', icon: Tags },
   ];
 
   // Items to be grouped under "User Acquisition Growth"
   const growthNavItems = [
-    { id: AppView.STRATEGY, label: 'FB广告策略生成器', icon: FileText },
+    { id: AppView.STRATEGY, label: 'FACEBOOK广告策略', icon: FileText },
+    { id: AppView.GOOGLE_ADS_STRATEGY, label: 'GOOGLE ADS广告策略', icon: Search },
+    { id: AppView.TIKTOK_ADS_STRATEGY, label: 'TIKTOK ADS广告策略', icon: Music },
+    { id: AppView.APPLE_ADS_STRATEGY, label: 'APPLE ADS广告策略', icon: Smartphone },
+    { id: AppView.APPLOVIN_STRATEGY, label: 'APPLOVIN广告策略', icon: Zap },
     { id: AppView.CPE_GEN, label: '买量事件生成器', icon: Trophy },
+    { id: AppView.MARKETING_CALENDAR, label: '主要国家营销日历', icon: Calendar },
   ];
 
   // Items to be grouped under "Latest News Brief"
   const newsNavItems = [
     { id: AppView.GOOGLE_PLAY_NEWS, label: 'GOOGLE PLAY最新资讯', icon: Store },
     { id: AppView.APPSTORE_NEWS, label: 'APPSTORE最新资讯', icon: ExternalLink },
+    { id: AppView.APPLE_SEARCH_ADS_NEWS, label: 'APPLE SEARCH ADS最新资讯', icon: Search },
     { id: AppView.GOOGLE_ADS_NEWS, label: 'GOOGLE ADS最新资讯', icon: Search },
     { id: AppView.FACEBOOK_ADS_NEWS, label: 'FACEBOOK ADS最新资讯', icon: Megaphone },
+    { id: AppView.ADMOB_NEWS, label: 'ADMOB最新资讯', icon: Smartphone },
+    { id: AppView.TIKTOK_ADS_NEWS, label: 'TIKTOK ADS最新资讯', icon: Music },
     { id: AppView.APPLOVIN_NEWS, label: 'APPLOVIN最新资讯', icon: Zap },
     { id: AppView.APPSFLYER_NEWS, label: 'APPSFLYER最新资讯', icon: BarChart2 },
   ];
@@ -360,7 +370,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
             </button>
 
             {/* News Collapsible Content */}
-            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${newsExpanded || (collapsed && false) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${newsExpanded || (collapsed && false) ? 'max-h-[1600px] opacity-100' : 'max-h-0 opacity-0'}`}>
               {newsNavItems.map(item => renderNavItem(item, true))}
             </div>
           </div>
