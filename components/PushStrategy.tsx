@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Bell, Loader2, Copy, Check, MessageSquare, Link as LinkIcon, Smile, Clock, Zap } from 'lucide-react';
+import { Bell, Loader2, Copy, Check, MessageSquare, Link as LinkIcon, Smile, Clock, Zap, ListOrdered } from 'lucide-react';
 import { generatePushStrategy } from '../services/geminiService';
 import { PushStrategyResponse } from '../types';
 
@@ -12,6 +12,11 @@ const PushStrategy: React.FC = () => {
   const [tone, setTone] = useState('Humorous & Casual (幽默休闲)');
   const [language, setLanguage] = useState('English (英文)');
   const [includeEmojis, setIncludeEmojis] = useState(true);
+  
+  // New configuration states
+  const [countPerCategory, setCountPerCategory] = useState(6);
+  const [includeTiming, setIncludeTiming] = useState(true);
+
   const [strategy, setStrategy] = useState<PushStrategyResponse>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -58,8 +63,17 @@ const PushStrategy: React.FC = () => {
     setLoading(true);
     setStrategy([]);
     try {
-      const result = await generatePushStrategy(gameName, genre, tone, language, storeUrl, includeEmojis);
-      setStrategy(result);
+      const result = await generatePushStrategy(
+        gameName, 
+        genre, 
+        tone, 
+        language, 
+        storeUrl, 
+        includeEmojis, 
+        countPerCategory, 
+        includeTiming
+      );
+      setStrategy(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error(error);
       alert("生成策略失败，请重试。");
@@ -150,18 +164,50 @@ const PushStrategy: React.FC = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
-            <div className={`p-2 rounded-lg ${includeEmojis ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
-              <Smile className="w-5 h-5" />
+          <div>
+             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <ListOrdered className="w-3 h-3" /> 每类生成条数
+             </label>
+             <input 
+               type="number" 
+               min="1"
+               max="20"
+               value={countPerCategory}
+               onChange={(e) => setCountPerCategory(Number(e.target.value))}
+               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+             />
+          </div>
+
+          <div className="space-y-3">
+            {/* Emojis Toggle */}
+            <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
+              <div className={`p-2 rounded-lg ${includeEmojis ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
+                <Smile className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-white block">包含表情符号</span>
+                <span className="text-xs text-slate-500">在文案中自动添加 Emoji</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={includeEmojis} onChange={(e) => setIncludeEmojis(e.target.checked)} className="sr-only peer" />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
             </div>
-            <div className="flex-1">
-              <span className="text-sm font-medium text-white block">包含表情符号</span>
-              <span className="text-xs text-slate-500">在文案中自动添加 Emoji</span>
+
+            {/* Timing Toggle */}
+            <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
+              <div className={`p-2 rounded-lg ${includeTiming ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-white block">推送时间和频率建议</span>
+                <span className="text-xs text-slate-500">AI 推荐最佳发送时机</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={includeTiming} onChange={(e) => setIncludeTiming(e.target.checked)} className="sr-only peer" />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={includeEmojis} onChange={(e) => setIncludeEmojis(e.target.checked)} className="sr-only peer" />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
@@ -204,7 +250,7 @@ const PushStrategy: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {section.notifications.map((note, nIdx) => {
+                    {section.notifications?.map((note, nIdx) => {
                       const id = `${sIdx}-${nIdx}`;
                       const fullCopy = note.title ? `${note.title}\n${note.body}` : note.body;
                       
@@ -234,10 +280,12 @@ const PushStrategy: React.FC = () => {
                            {/* Details & Translation */}
                            <div className="pt-3 border-t border-slate-800 mt-2 space-y-2">
                               <p className="text-xs text-slate-500 italic">{note.translation}</p>
-                              <div className="flex items-center gap-1.5 text-[10px] text-indigo-300 bg-indigo-900/20 w-fit px-2 py-1 rounded">
-                                 <Clock className="w-3 h-3" />
-                                 <span>{note.timing}</span>
-                              </div>
+                              {note.timing && (
+                                <div className="flex items-center gap-1.5 text-[10px] text-indigo-300 bg-indigo-900/20 w-fit px-2 py-1 rounded">
+                                   <Clock className="w-3 h-3" />
+                                   <span>{note.timing}</span>
+                                </div>
+                              )}
                            </div>
                         </div>
                       );

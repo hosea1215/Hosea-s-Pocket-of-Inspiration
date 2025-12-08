@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -47,6 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
 
   // Items to be grouped under "User Acquisition Growth"
   const growthNavItems = [
+    { id: AppView.OMNICHANNEL_STRATEGY, label: '全渠道发行策略', icon: Globe },
     { id: AppView.STRATEGY, label: 'FACEBOOK广告策略', icon: FileText },
     { id: AppView.GOOGLE_ADS_STRATEGY, label: 'GOOGLE ADS广告策略', icon: Search },
     { id: AppView.TIKTOK_ADS_STRATEGY, label: 'TIKTOK ADS广告策略', icon: Music },
@@ -58,6 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
 
   // Items to be grouped under "Latest News Brief"
   const newsNavItems = [
+    { id: AppView.AI_NEWS, label: '获得 AI 新闻', icon: Bot },
     { id: AppView.GOOGLE_PLAY_NEWS, label: 'GOOGLE PLAY最新资讯', icon: Store },
     { id: AppView.APPSTORE_NEWS, label: 'APPSTORE最新资讯', icon: ExternalLink },
     { id: AppView.APPLE_SEARCH_ADS_NEWS, label: 'APPLE SEARCH ADS最新资讯', icon: Search },
@@ -71,6 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
 
   // Items to be grouped under "Creative & Copy"
   const creativeNavItems = [
+    { id: AppView.IMAGE_REPLICATION, label: '图片素材仿制', icon: RefreshCcw },
     { id: AppView.CREATIVE, label: 'FACEBOOK图文广告创意', icon: ImageIcon },
     { id: AppView.COPY_GEN, label: 'FACEBOOK广告文案', icon: Languages },
     { id: AppView.LIVEOPS_GEN, label: 'GooglePlay LiveOps物料', icon: Calendar },

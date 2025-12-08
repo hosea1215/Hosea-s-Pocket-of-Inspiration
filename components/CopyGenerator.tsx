@@ -65,7 +65,7 @@ const CopyGenerator: React.FC = () => {
         storeUrl,
         copyStyle
       );
-      setResults(data);
+      setResults(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
       alert("生成文案失败，请重试。");

@@ -34,8 +34,9 @@ const CpeGenerator: React.FC = () => {
     setComboEvents([]);
     try {
       const data = await generateCpeEvents(gameName, genre, gameplay, acquisitionGoal, singleCount, comboCount);
-      setSingleEvents(data.singleEvents);
-      setComboEvents(data.comboEvents);
+      // Safety check: ensure arrays exist
+      setSingleEvents(Array.isArray(data.singleEvents) ? data.singleEvents : []);
+      setComboEvents(Array.isArray(data.comboEvents) ? data.comboEvents : []);
     } catch (error) {
       console.error(error);
       alert("生成 CPE 事件失败，请重试。");

@@ -1,378 +1,763 @@
-import { GoogleGenAI } from "@google/genai";
+
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { 
-  MarketingCalendarData, 
   GameDetails, 
-  CopyVariant, 
   CpeResponse, 
-  EconomicMetrics, 
-  CompetitorAnalysisResponse, 
+  AdCreative, 
+  CopyVariant, 
+  CompetitorReport, 
+  CompetitorMetrics, 
+  TargetAudience, 
+  MarketPerformance, 
   StoreComparisonResponse, 
   PushStrategyResponse, 
   LiveOpsContent, 
-  FourElementsResponse, 
+  FourElementsScore, 
   SkinnerBoxResponse, 
   DopamineLoopResponse, 
   BartleResponse, 
-  NarrativeResponse
+  NarrativeResponse, 
+  MarketingCalendarData, 
+  EconomicMetrics,
+  CompetitorAnalysisResponse,
+  FourElementsResponse
 } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const PRO_MODEL = 'gemini-3-pro-preview';
+const FLASH_MODEL = 'gemini-2.5-flash';
+const IMAGE_MODEL = 'gemini-2.5-flash-image';
 
-// Helper to clean JSON string if markdown code blocks are present
-const cleanJson = (text: string) => {
-  return text.replace(/```json\n?|\n?```/g, '').trim();
-};
+const getAi = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const generateMarketingCalendar = async (countriesStr: string, year: number, quarter: string, language: string): Promise<{markdown: string, chartData: MarketingCalendarData[]}> => {
-    const prompt = `Marketing Calendar for ${countriesStr}, ${year} ${quarter}. Language: ${language}. 
-    
-    Structure the response as a JSON object with two keys:
-    1. "markdown": A comprehensive Markdown string detailing the marketing calendar, holidays, and strategy.
-    2. "chartData": An array of objects representing monthly data. Each object must have:
-       - "month": string (e.g., 'Jan')
-       - "intensity": number (0-100, estimated marketing competition/activity level)
-       - "keyEvent": string (Name of the main event)
-       - "count": number (Total significant events)
-       - "historicalRoas": number (Estimated historical ROAS benchmark for this month/events in these regions, e.g., 1.5)
-       - "historicalCtr": number (Estimated historical CTR benchmark, e.g., 2.2)
-       - "pastCampaignInsight": string (A short insight on why past campaigns performed this way during this period, e.g., "High CPMs during holidays but high conversion rate.")
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-    return JSON.parse(cleanJson(response.text || "{}"));
-};
+export const describeImageForRecreation = async (base64Data: string, mimeType: string): Promise<string> => {
+    const ai = getAi();
+    // Using flash for fast vision analysis
+    const prompt = `Describe this image in extreme detail for the purpose of recreating it with an AI image generator. 
+    Focus on composition, lighting, art style, key subjects, colors, and perspective. 
+    Do not output conversational text, just the detailed prompt description.`;
 
-export const generateMarketingPlan = async (details: GameDetails, platform: string, language: string): Promise<string> => {
-  const prompt = `Generate a ${platform} Marketing Strategy for the game "${details.name}" in ${language}.
-  Details:
-  - Genre: ${details.genre}
-  - Target Audience: ${details.targetAudience}
-  - Market: ${details.market}
-  - Budget: ${details.budget}
-  - Goal: ${details.promotionGoal}
-  - Purpose: ${details.promotionPurpose}
-  - USP: ${details.usp}
-  - Gameplay: ${details.gameplay}
-  
-  Output a comprehensive Markdown formatted plan.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateAsoAnalysis = async (details: GameDetails, language: string): Promise<string> => {
-  const prompt = `Perform an ASO Keyword Analysis for "${details.name}" (${details.genre}) in ${language}. 
-  Market: ${details.market}. USP: ${details.usp}.
-  Output in Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateAdCopy = async (gameDetails: Partial<GameDetails>, concept: string, cta: string, language: string): Promise<{headline: string, body: string, cta: string}> => {
-  const prompt = `Write a Facebook Ad Copy for "${gameDetails.name}".
-  Concept: ${concept}.
-  CTA: ${cta}.
-  Language: ${language}.
-  Output JSON with keys: headline, body, cta.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generateAdImage = async (
-  prompt: string, 
-  aspectRatio: string, 
-  style: string, 
-  visualDetails: string, 
-  language: string, 
-  includeText: boolean, 
-  includeCharacters: boolean,
-  model: string = 'gemini-2.5-flash-image'
-): Promise<{imageUrl: string, prompt: string, promptZh?: string}> => {
-  
-  const fullPrompt = `Ad Creative Image for mobile game.
-  Style: ${style}.
-  Aspect Ratio: ${aspectRatio}.
-  Visual Details: ${visualDetails}.
-  Include Text: ${includeText}.
-  Include Characters: ${includeCharacters}.
-  Prompt: ${prompt}.
-  Language context: ${language}.`;
-
-  let imageUrl = "";
-  
-  if (model.includes('imagen')) {
-    const response = await ai.models.generateImages({
-      model: model,
-      prompt: fullPrompt,
-      config: { numberOfImages: 1, aspectRatio: aspectRatio as any } 
-    });
-    if (response.generatedImages && response.generatedImages[0]?.image?.imageBytes) {
-       const base64 = response.generatedImages[0].image.imageBytes;
-       imageUrl = `data:image/png;base64,${base64}`;
-    }
-  } else {
-    // gemini-2.5-flash-image or gemini-3-pro-image-preview
     const response = await ai.models.generateContent({
-      model: model,
-      contents: { parts: [{ text: fullPrompt }] },
+        model: 'gemini-2.5-flash',
+        contents: {
+            parts: [
+                {
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: base64Data
+                    }
+                },
+                { text: prompt }
+            ]
+        }
     });
-    
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-      }
-    }
-  }
-
-  return { imageUrl, prompt: fullPrompt, promptZh: "" };
-};
-
-export const analyzeVisualDetailsFromUrl = async (gameName: string, url: string): Promise<string> => {
-  const prompt = `Analyze the visual style of the game "${gameName}" from its store URL: ${url}. Describe it in 2 sentences.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateAppIcon = async (name: string, genre: string, style: string, elements: string): Promise<string> => {
-  const prompt = `App Icon for "${name}". Genre: ${genre}. Style: ${style}. Elements: ${elements}. High quality, app store standard.`;
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: { parts: [{ text: prompt }] }
-  });
-  
-  let imageUrl = "";
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    }
-  }
-  return imageUrl;
-};
-
-export const analyzeIconElementsFromUrl = async (name: string, url: string): Promise<string> => {
-  const prompt = `Suggest icon elements for game "${name}" based on store URL: ${url}.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateFacebookAdCopies = async (productName: string, description: string, language: string, emojis: boolean, url: string, style: string): Promise<CopyVariant[]> => {
-  const prompt = `Generate 6 Facebook Ad Copies for "${productName}". 
-  Description: ${description}. 
-  Language: ${language}. 
-  Style: ${style}. 
-  Use Emojis: ${emojis}.
-  URL context: ${url}.
-  Output JSON array of objects with "id", "targetText" (the copy), "sourceText" (explanation or translation).`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "[]"));
-};
-
-export const analyzeSellingPointsFromUrl = async (name: string, url: string): Promise<string> => {
-  const prompt = `Extract 5 key selling points for "${name}" from ${url}.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateCpeEvents = async (name: string, genre: string, gameplay: string, goal: string, singleCount: number, comboCount: number): Promise<CpeResponse> => {
-  const prompt = `Generate CPE (Cost Per Engagement) events for "${name}". 
-  Genre: ${genre}. Gameplay: ${gameplay}. UA Goal: ${goal}.
-  Generate ${singleCount} single events and ${comboCount} combo events.
-  Output JSON with keys: "singleEvents" and "comboEvents". Each event object matches CpeEvent interface.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{\"singleEvents\": [], \"comboEvents\": []}"));
-};
-
-export const analyzeGameplayFromUrl = async (name: string, url: string): Promise<string> => {
-  const prompt = `Describe the gameplay of "${name}" based on ${url}.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateAsmrPlan = async (name: string, genre: string, type: string, url: string, language: string): Promise<string> => {
-  const prompt = `Create an ASMR Marketing Plan for "${name}" (${genre}). ASMR Type: ${type}. Language: ${language}. Store URL: ${url}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateAbacrAnalysis = async (name: string, genre: string, gameplay: string, url: string, purpose: string, language: string): Promise<string> => {
-  const prompt = `Analyze "${name}" using the ABACR Loop model. 
-  Genre: ${genre}. Gameplay: ${gameplay}. Purpose: ${purpose}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const expandDesignPurpose = async (purpose: string, name: string): Promise<string> => {
-  const prompt = `Expand the design purpose "${purpose}" for game "${name}" into a detailed paragraph.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const analyzeGameEconomics = async (metrics: EconomicMetrics): Promise<string> => {
-  const prompt = `Analyze these game economic metrics and provide LTV/ROAS insights in Markdown: ${JSON.stringify(metrics)}`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const analyzeCompetitor = async (name: string, url: string): Promise<CompetitorAnalysisResponse> => {
-  const prompt = `Analyze competitor "${name}" from ${url}. 
-  Return JSON with "metrics" (CompetitorMetrics), "market" (MarketPerformance), "audience" (TargetAudience), "report" (CompetitorReport).
-  Estimate values if real data is unavailable.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const extractGameNameFromUrl = async (url: string): Promise<string> => {
-  const prompt = `Extract game name from URL: ${url}. Return just the name.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text?.trim() || "";
-};
-
-export const compareStorePages = async (url1: string, url2: string, language: string): Promise<StoreComparisonResponse> => {
-  const prompt = `Compare store pages ${url1} and ${url2}. Language: ${language}.
-  Return JSON matching StoreComparisonResponse interface.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generatePushStrategy = async (name: string, genre: string, tone: string, language: string, url: string, emojis: boolean): Promise<PushStrategyResponse> => {
-  const prompt = `Generate Push Notification Strategy for "${name}". Tone: ${tone}. Language: ${language}. Emojis: ${emojis}.
-  Output JSON array of objects (sections) matching PushStrategyResponse type.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "[]"));
-};
-
-export const generateLiveOpsContent = async (name: string, url: string, type: string, theme: string, language: string, text: boolean, chars: boolean): Promise<LiveOpsContent> => {
-  const prompt = `Generate LiveOps content for "${name}". Event: ${type}. Theme: ${theme}. Language: ${language}.
-  Return JSON matching LiveOpsContent interface.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generateHookedAnalysis = async (name: string, gameplay: string, url: string, audience: string, language: string): Promise<string> => {
-  const prompt = `Analyze "${name}" using Hooked Model. Gameplay: ${gameplay}. Audience: ${audience}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateDeepAsoAnalysis = async (name: string, genre: string, url: string, competitors: string, market: string): Promise<string> => {
-  const prompt = `Deep ASO Analysis for "${name}". Genre: ${genre}. Competitors: ${competitors}. Market: ${market}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateMdaAnalysis = async (name: string, genre: string, gameplay: string, url: string, language: string): Promise<string> => {
-  const prompt = `MDA Framework Analysis for "${name}". Genre: ${genre}. Gameplay: ${gameplay}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateOctalysisAnalysis = async (name: string, gameplay: string, url: string, audience: string, language: string): Promise<string> => {
-  const prompt = `Octalysis Analysis for "${name}". Gameplay: ${gameplay}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateFoggBehaviorAnalysis = async (name: string, gameplay: string, url: string, audience: string, language: string): Promise<string> => {
-  const prompt = `Fogg Behavior Model Analysis for "${name}". Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateFlowAnalysis = async (name: string, gameplay: string, url: string, skill: string, language: string): Promise<string> => {
-  const prompt = `Flow Theory Analysis for "${name}". Skill Level: ${skill}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateFourElementsAnalysis = async (name: string, gameplay: string, url: string, genre: string, language: string): Promise<FourElementsResponse> => {
-  const prompt = `Four Elements (Caillois) Analysis for "${name}". Language: ${language}.
-  Return JSON with "scores" (FourElementsScore) and "analysis" (string).`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generateSkinnerBoxAnalysis = async (name: string, gameplay: string, url: string, language: string): Promise<SkinnerBoxResponse> => {
-  const prompt = `Skinner Box Analysis for "${name}". Language: ${language}.
-  Return JSON matching SkinnerBoxResponse interface.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generateDopamineLoopAnalysis = async (name: string, gameplay: string, url: string, rewards: string, language: string): Promise<DopamineLoopResponse> => {
-  const prompt = `Dopamine Loop Analysis for "${name}". Rewards: ${rewards}. Language: ${language}.
-  Return JSON matching DopamineLoopResponse interface.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generateBartleAnalysis = async (name: string, gameplay: string, url: string, language: string): Promise<BartleResponse> => {
-  const prompt = `Bartle Taxonomy Analysis for "${name}". Language: ${language}.
-  Return JSON matching BartleResponse interface.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generateNarrativeAnalysis = async (name: string, gameplay: string, url: string, genre: string, language: string): Promise<NarrativeResponse> => {
-  const prompt = `Narrative Design Analysis for "${name}". Language: ${language}.
-  Return JSON matching NarrativeResponse interface.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
-  return JSON.parse(cleanJson(response.text || "{}"));
-};
-
-export const generateIaaPlan = async (name: string, genre: string, gameplay: string, market: string, language: string): Promise<string> => {
-  const prompt = `IAA Monetization Plan for "${name}". Genre: ${genre}. Market: ${market}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateIapPlan = async (name: string, genre: string, gameplay: string, audience: string, language: string): Promise<string> => {
-  const prompt = `IAP Monetization Plan for "${name}". Genre: ${genre}. Audience: ${audience}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
-};
-
-export const generateGooglePlayNews = async (language: string): Promise<string> => {
-  const prompt = `Google Play News Briefing (Last 30 days). Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ 
-    model: 'gemini-2.5-flash', 
-    contents: prompt,
-    config: {
-        tools: [{googleSearch: {}}]
-    }
-  });
-  return response.text || "";
+    return response.text || "";
 };
 
 export const generateAppStoreNews = async (language: string): Promise<string> => {
-  const prompt = `App Store News Briefing (Last 30 days). Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ 
-    model: 'gemini-2.5-flash', 
-    contents: prompt,
-    config: {
-        tools: [{googleSearch: {}}]
+    const ai = getAi();
+    const prompt = `Summarize the latest Apple App Store Connect, Policy, ASA, and iOS Market news (last 30 days). Language: ${language}. Output Markdown. Use Google Search.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateOmnichannelStrategy = async (details: GameDetails, gpUrl: string, iosUrl: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Generate a comprehensive Omnichannel Publishing & Growth Strategy for the game "${details.name}".
+    
+    Game Details:
+    - Target Audience: ${details.targetAudience}
+    - Quarterly Budget: $${details.budget}
+    - Target Markets: ${details.market}
+    - Promotion Purpose: ${details.promotionPurpose}
+    - Goal: ${details.promotionGoal}
+    - Google Play Link: ${gpUrl}
+    - App Store Link: ${iosUrl}
+    
+    Language: ${language}.
+    Output format: Markdown.
+    
+    Please include the following sections in detail:
+    1. **Omnichannel Channel Mix (全渠道组合):**
+       - App Stores (Organic & Paid)
+       - Media Channels (Social Media, Influencers)
+       - Pre-install Channels (OEMs)
+       - Ad Networks (Video networks, SDK networks)
+       - DSP (Programmatic buying)
+       - Brand Advertising (Awareness campaigns)
+       - Offerwalls (积分墙)
+       - Rewarded Apps/Webs (网赚)
+       - Budget Allocation split by these channels and phase.
+    2. **Media Buying Strategy (买量策略):**
+       - Targeting strategy per channel.
+       - Bidding strategies.
+    3. **App Store Optimization (ASO) Strategy (双端 ASO 策略):**
+       - Specific keywords and metadata suggestions for Google Play.
+       - Specific keywords and metadata suggestions for App Store (iOS).
+       - Creative asset optimization (Icon, Screenshots, Video) differences for both stores.
+    4. **Creative Strategy (素材策略):**
+       - Key angles and hooks based on the target audience.
+       - Format recommendations (Video, Static, Playable).
+    5. **Phasing & Timeline (推广节奏):**
+       - Launch/Scale-up timeline for the quarter.
+    6. **KPI Benchmarks (核心指标):**
+       - Expected CPI, ROAS, and Retention goals for the target markets.
+    
+    Use the provided store links to infer game genre and visual style context using Google Search.`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateMarketingPlan = async (details: GameDetails, platform: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Generate a specific ${platform} User Acquisition Strategy for the game "${details.name}".
+    
+    Game Details:
+    - Genre: ${details.genre}
+    - Target Audience: ${details.targetAudience}
+    - Budget: $${details.budget}
+    - Market: ${details.market}
+    - USP: ${details.usp}
+    - Goal: ${details.promotionGoal}
+    
+    Language: ${language}.
+    Output format: Markdown.
+    
+    Include:
+    1. Campaign Structure (Campaigns, Ad Sets)
+    2. Targeting Strategy (Interests, Lookalikes, Behaviors specific to ${platform})
+    3. Budget Allocation & Bidding Strategy
+    4. Creative Recommendations for ${platform}
+    5. Expected KPIs`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
+};
+
+export const generateAsoAnalysis = async (details: GameDetails, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Perform an ASO Keyword Analysis for the game "${details.name}".
+    
+    Genre: ${details.genre}
+    Gameplay: ${details.gameplay}
+    Market: ${details.market}
+    
+    Language: ${language}.
+    Output format: Markdown.
+    
+    Provide:
+    1. Short-tail Keywords (High Volume)
+    2. Long-tail Keywords (High Conversion)
+    3. Competitor Keywords
+    4. Title & Subtitle Suggestions`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
+};
+
+export const generateAdCopy = async (gameDetails: GameDetails, concept: string, cta: string, language: string): Promise<{headline: string, body: string, cta: string}> => {
+    const ai = getAi();
+    const prompt = `Write a Facebook Ad Copy for a mobile game.
+    Game: ${gameDetails.name}
+    Concept: ${concept}
+    CTA: ${cta}
+    Language: ${language}
+    
+    Return JSON format: { "headline": "...", "body": "...", "cta": "..." }`;
+
+    const response = await ai.models.generateContent({
+        model: FLASH_MODEL,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+    
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        return { headline: "", body: response.text || "", cta };
     }
-  });
-  return response.text || "";
+};
+
+export const generateAdImage = async (
+    promptText: string, 
+    aspectRatio: string, 
+    style: string, 
+    visualDetails: string, 
+    language: string, 
+    includeText: boolean, 
+    includeCharacters: boolean, 
+    model: string = 'gemini-2.5-flash-image'
+): Promise<{imageUrl: string, prompt: string, promptZh: string}> => {
+    const ai = getAi();
+    
+    const finalPrompt = `Mobile game ad creative. ${promptText}. Style: ${style}. Details: ${visualDetails}. ${includeText ? 'Include text overlays.' : 'No text overlays.'} ${includeCharacters ? 'Include characters.' : 'No characters.'}`;
+    
+    let imageUrl = '';
+
+    if (model.includes('imagen')) {
+        const response = await ai.models.generateImages({
+            model: model,
+            prompt: finalPrompt,
+            config: {
+                numberOfImages: 1,
+                aspectRatio: aspectRatio === '9:16' ? '9:16' : (aspectRatio === '16:9' ? '16:9' : (aspectRatio === '4:5' ? '4:5' : '1:1')),
+            }
+        });
+        const base64 = response.generatedImages[0].image.imageBytes;
+        imageUrl = `data:image/png;base64,${base64}`;
+    } else {
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: {
+                parts: [{ text: finalPrompt }]
+            },
+            config: {
+               // imageConfig is not available for gemini-2.5-flash-image directly in the same way as imagen, 
+               // but for gemini-3-pro-image-preview it uses generateContent.
+               // gemini-2.5-flash-image output fits in 1:1 by default usually.
+            }
+        });
+        
+        // Find image part
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) {
+                imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                break;
+            }
+        }
+    }
+
+    return { imageUrl, prompt: finalPrompt, promptZh: "翻译提示词..." };
+};
+
+export const analyzeVisualDetailsFromUrl = async (gameName: string, storeUrl: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze the visual style of the game "${gameName}" from its store URL: ${storeUrl}. Describe color palette, art style, and key visual elements. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateAppIcon = async (gameName: string, genre: string, style: string, elements: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `App Icon for mobile game "${gameName}" (${genre}). Style: ${style}. Elements: ${elements}. High quality, 512x512.`;
+    
+    // Using gemini-2.5-flash-image for icons as default
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [{ text: prompt }] }
+    });
+
+    let imageUrl = '';
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+            imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            break;
+        }
+    }
+    return imageUrl;
+};
+
+export const analyzeIconElementsFromUrl = async (gameName: string, storeUrl: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze the app icon elements of "${gameName}" from ${storeUrl}. Suggest key visual elements for a new icon. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateFacebookAdCopies = async (productName: string, description: string, language: string, includeEmojis: boolean, storeUrl: string, copyStyle: string): Promise<CopyVariant[]> => {
+    const ai = getAi();
+    const prompt = `Generate 20 distinct Facebook Ad Copy variants for the game "${productName}".
+    Description: ${description}
+    Store URL: ${storeUrl}
+    Target Language: ${language}
+    Include Emojis: ${includeEmojis}
+    Style: ${copyStyle}
+    
+    Return a JSON array of objects with "id" (string), "targetText" (the ad copy in target language), and "sourceText" (Simplified Chinese translation).`;
+
+    const response = await ai.models.generateContent({
+        model: FLASH_MODEL,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+
+    try {
+        return JSON.parse(response.text || "[]");
+    } catch (e) {
+        return [];
+    }
+};
+
+export const analyzeSellingPointsFromUrl = async (productName: string, storeUrl: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze the selling points of "${productName}" from ${storeUrl}. Summarize into a concise description. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateCpeEvents = async (gameName: string, genre: string, gameplay: string, acquisitionGoal: string, singleCount: number, comboCount: number): Promise<CpeResponse> => {
+    const ai = getAi();
+    const prompt = `Generate a list of CPE (Cost Per Engagement) events for the game "${gameName}" (${genre}).
+    Gameplay: ${gameplay}
+    UA Goal: ${acquisitionGoal}
+    
+    Generate ${singleCount} Single Events and ${comboCount} Combo Events.
+    Return JSON format with "singleEvents" and "comboEvents" arrays. Each event has: id, eventName, descriptionZh, descriptionEn, difficulty, estimatedTime, uaValueZh, uaValueEn, completionRate, timeLimit.`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+
+    try {
+        return JSON.parse(response.text || "{\"singleEvents\":[], \"comboEvents\":[]}");
+    } catch (e) {
+        return { singleEvents: [], comboEvents: [] };
+    }
+};
+
+export const analyzeGameplayFromUrl = async (gameName: string, storeUrl: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze the gameplay mechanics of "${gameName}" from ${storeUrl}. Describe the core loop and features. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateAsmrPlan = async (gameName: string, genre: string, asmrType: string, storeUrl: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Create an ASMR Marketing Plan for "${gameName}" (${genre}). Focus on "${asmrType}". Store URL: ${storeUrl}. Language: ${language}. Use Google Search to understand the game audio style.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateAbacrAnalysis = async (gameName: string, genre: string, gameplay: string, storeUrl: string, designPurpose: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using the ABACR Level Design Loop model. Genre: ${genre}. Gameplay: ${gameplay}. Design Purpose: ${designPurpose}. Store URL: ${storeUrl}. Language: ${language}. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const expandDesignPurpose = async (designPurpose: string, gameName: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Expand the game design purpose: "${designPurpose}" for game "${gameName}". Make it more detailed and strategic.`;
+    const response = await ai.models.generateContent({
+        model: FLASH_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
+};
+
+export const analyzeGameEconomics = async (metrics: EconomicMetrics, countries: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze the provided game economic metrics for markets: ${countries}.
+    Metrics: ${JSON.stringify(metrics)}
+    Provide insights on LTV, Payback period, and ROAS optimization.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
+};
+
+export const analyzeCompetitor = async (gameName: string, storeUrl: string): Promise<CompetitorAnalysisResponse> => {
+    const ai = getAi();
+    const prompt = `Analyze competitor game "${gameName}" from ${storeUrl}.
+    Return JSON with fields:
+    - metrics: { d1, d7, d30, avgSessionDuration, estimatedDau, topCountries (array) }
+    - market: { financialTrends (array of {month, downloads, revenue}), rankingHistory (array of {month, freeRank, grossingRank}), genderDistribution (array of {name, value}), ageDistribution (array of {name, value}) }
+    - audience: { countries (array), gender, age, interests (array), income, occupation (array), relationship }
+    - report: { marketAnalysis, productAnalysis, coreGameplay, abacrAnalysis, hookedModel, emotionalAttachment, pushStrategy, asmrPotential, monetization, liveOps, branding, community, ipPotential, techStack, localization, gameEvents, userReviews, swot } (all strings)`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        console.error("JSON parse error", e);
+        throw new Error("Failed to parse analysis");
+    }
+};
+
+export const extractGameNameFromUrl = async (storeUrl: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Extract the game name from this store URL: ${storeUrl}. Return only the name.`;
+    const response = await ai.models.generateContent({
+        model: FLASH_MODEL,
+        contents: prompt,
+    });
+    return response.text?.trim() || "";
+};
+
+export const compareStorePages = async (url1: string, url2: string, language: string): Promise<StoreComparisonResponse> => {
+    const ai = getAi();
+    const prompt = `Compare two mobile game store pages. URL 1: ${url1}. URL 2: ${url2}. Language: ${language}.
+    Return JSON: { "game1Name": "...", "game2Name": "...", "comparisonTable": [ { "dimension": "...", "game1Content": "...", "game2Content": "...", "winner": "Game 1"|"Game 2"|"Tie", "insight": "..." } ], "detailedAnalysis": "..." }`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json" 
+        }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        throw new Error("Failed to parse comparison");
+    }
+};
+
+export const generatePushStrategy = async (gameName: string, genre: string, tone: string, language: string, storeUrl: string, includeEmojis: boolean, countPerCategory: number, includeTiming: boolean): Promise<PushStrategyResponse> => {
+    const ai = getAi();
+    const prompt = `Generate a Push Notification Strategy for "${gameName}" (${genre}).
+    Tone: ${tone}. Language: ${language}. Store URL: ${storeUrl}. Emojis: ${includeEmojis}. Include Timing: ${includeTiming}.
+    Generate ${countPerCategory} notifications per category.
+    Categories: Onboarding, Retention, monetization, Win-back.
+    Return JSON array of sections: [{ "category": "...", "notifications": [{ "title": "...", "body": "...", "emoji": "...", "translation": "...", "timing": "..." }] }]`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+
+    try {
+        return JSON.parse(response.text || "[]");
+    } catch (e) {
+        return [];
+    }
+};
+
+export const generateLiveOpsContent = async (gameName: string, storeUrl: string, eventType: string, eventTheme: string, language: string, includeText: boolean, includeCharacters: boolean): Promise<LiveOpsContent> => {
+    const ai = getAi();
+    const prompt = `Generate Google Play LiveOps content for "${gameName}". Event Type: ${eventType}. Theme: ${eventTheme}. Language: ${language}.
+    Return JSON: { "eventName": "...", "shortDescription": "...", "longDescription": "...", "imagePrompt": "...", "translation": { "eventName": "...", "shortDescription": "...", "longDescription": "..." } }`;
+
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        return { eventName: "", shortDescription: "", longDescription: "", imagePrompt: "" };
+    }
+};
+
+export const generateHookedAnalysis = async (gameName: string, gameplay: string, storeUrl: string, targetAudience: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using the Hooked Model. Gameplay: ${gameplay}. Audience: ${targetAudience}. Store: ${storeUrl}. Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateDeepAsoAnalysis = async (gameName: string, genre: string, storeUrl: string, competitors: string, market: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Perform Deep ASO Analysis for "${gameName}" (${genre}). Competitors: ${competitors}. Market: ${market}. Store: ${storeUrl}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateMdaAnalysis = async (gameName: string, genre: string, gameplay: string, storeUrl: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using MDA Framework. Genre: ${genre}. Gameplay: ${gameplay}. Store: ${storeUrl}. Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateOctalysisAnalysis = async (gameName: string, gameplay: string, storeUrl: string, targetAudience: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using Octalysis Framework. Gameplay: ${gameplay}. Audience: ${targetAudience}. Store: ${storeUrl}. Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateFoggBehaviorAnalysis = async (gameName: string, gameplay: string, storeUrl: string, targetAudience: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using Fogg Behavior Model. Gameplay: ${gameplay}. Audience: ${targetAudience}. Store: ${storeUrl}. Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateFlowAnalysis = async (gameName: string, gameplay: string, storeUrl: string, playerSkill: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using Flow Theory. Gameplay: ${gameplay}. Skill: ${playerSkill}. Store: ${storeUrl}. Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateFourElementsAnalysis = async (gameName: string, gameplay: string, storeUrl: string, genre: string, language: string): Promise<FourElementsResponse> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using Caillois' Four Elements (Agon, Alea, Mimicry, Ilinx). Gameplay: ${gameplay}. Store: ${storeUrl}. Language: ${language}.
+    Return JSON: { "scores": { "agon": number (0-10), "alea": number, "mimicry": number, "ilinx": number }, "analysis": string (markdown) }. Use Google Search.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        throw new Error("Failed to parse analysis");
+    }
+};
+
+export const generateSkinnerBoxAnalysis = async (gameName: string, gameplay: string, storeUrl: string, language: string): Promise<SkinnerBoxResponse> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using Skinner Box theory. Gameplay: ${gameplay}. Store: ${storeUrl}. Language: ${language}.
+    Return JSON: { "schedules": { "fixedRatio": "...", "variableRatio": "...", "fixedInterval": "...", "variableInterval": "..." }, "analysis": "..." (markdown) }. Use Google Search.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        throw new Error("Failed to parse analysis");
+    }
+};
+
+export const generateDopamineLoopAnalysis = async (gameName: string, gameplay: string, storeUrl: string, rewardMechanics: string, language: string): Promise<DopamineLoopResponse> => {
+    const ai = getAi();
+    const prompt = `Analyze Dopamine Loops in "${gameName}". Gameplay: ${gameplay}. Rewards: ${rewardMechanics}. Store: ${storeUrl}. Language: ${language}.
+    Return JSON: { "loop": { "goal": "...", "reward": "...", "feedback": "..." }, "analysis": "..." (markdown) }. Use Google Search.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        throw new Error("Failed to parse analysis");
+    }
+};
+
+export const generateBartleAnalysis = async (gameName: string, gameplay: string, storeUrl: string, language: string): Promise<BartleResponse> => {
+    const ai = getAi();
+    const prompt = `Analyze "${gameName}" using Bartle Taxonomy. Gameplay: ${gameplay}. Store: ${storeUrl}. Language: ${language}.
+    Return JSON: { "scores": { "achievers": number (%), "explorers": number, "socializers": number, "killers": number }, "analysis": "..." (markdown) }. Use Google Search.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        throw new Error("Failed to parse analysis");
+    }
+};
+
+export const generateNarrativeAnalysis = async (gameName: string, gameplay: string, storeUrl: string, genre: string, language: string): Promise<NarrativeResponse> => {
+    const ai = getAi();
+    const prompt = `Analyze Narrative Design of "${gameName}". Gameplay: ${gameplay}. Store: ${storeUrl}. Language: ${language}.
+    Return JSON: { "scores": { "threeAct": number (0-10), "nonLinear": number, "circular": number, "interactive": number }, "analysis": "..." (markdown) }. Use Google Search.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        }
+    });
+
+    try {
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        throw new Error("Failed to parse analysis");
+    }
+};
+
+export const generateIaaPlan = async (gameName: string, genre: string, gameplay: string, targetMarket: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Create IAA Monetization Plan for "${gameName}" (${genre}). Gameplay: ${gameplay}. Market: ${targetMarket}. Language: ${language}. Output Markdown.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
+};
+
+export const generateIapPlan = async (gameName: string, genre: string, gameplay: string, targetAudience: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Create IAP Monetization Plan for "${gameName}" (${genre}). Gameplay: ${gameplay}. Audience: ${targetAudience}. Language: ${language}. Output Markdown.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
+};
+
+export const generateGooglePlayNews = async (language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Summarize latest Google Play Console, Policy, and Market news (last 30 days). Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
 };
 
 export const generateAdTechNews = async (platform: string, language: string): Promise<string> => {
-  const prompt = `${platform} Ad Tech News Briefing (Last 30 days). Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ 
-    model: 'gemini-2.5-flash', 
-    contents: prompt,
-    config: {
-        tools: [{googleSearch: {}}]
+    const ai = getAi();
+    const prompt = `Summarize latest AdTech news for ${platform} (last 30 days). Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
+};
+
+export const generateMarketingCalendar = async (countriesStr: string, year: number, quarter: string, language: string): Promise<{markdown: string, chartData: MarketingCalendarData[]}> => {
+    const ai = getAi();
+    const prompt = `Create Marketing Calendar for ${countriesStr}. Period: ${year} ${quarter}. Language: ${language}.
+    Return JSON: { "markdown": "...", "chartData": [{ "month": "...", "intensity": number (0-100), "keyEvent": "...", "count": number, "historicalRoas": number, "historicalCtr": number, "pastCampaignInsight": "..." }] }. Use Google Search for events and historical data estimation.`;
+    
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { 
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json"
+        }
+    });
+
+    try {
+        const json = JSON.parse(response.text || "{}");
+        return { markdown: json.markdown || "", chartData: json.chartData || [] };
+    } catch (e) {
+        return { markdown: response.text || "", chartData: [] };
     }
-  });
-  return response.text || "";
 };
 
-export const generateAdBiddingStrategy = async (name: string, genre: string, platform: string, market: string, language: string): Promise<string> => {
-  const prompt = `Ad Bidding Strategy for "${name}". Platform: ${platform}. Market: ${market}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
+export const generateAdBiddingStrategy = async (gameName: string, genre: string, platform: string, market: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Create Ad Bidding Strategy (Waterfall/Hybrid) for "${gameName}" (${genre}) on ${platform} in ${market}. Language: ${language}. Output Markdown.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
 };
 
-export const generateIapPricingStrategy = async (name: string, genre: string, region: string, language: string): Promise<string> => {
-  const prompt = `IAP Pricing Strategy for "${name}". Region: ${region}. Language: ${language}. Output Markdown.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-  return response.text || "";
+export const generateIapPricingStrategy = async (gameName: string, genre: string, region: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Create IAP Pricing Strategy for "${gameName}" (${genre}) in ${region}. Language: ${language}. Output Markdown.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+    });
+    return response.text || "";
+};
+
+export const generateAiNews = async (timeRange: string, language: string): Promise<string> => {
+    const ai = getAi();
+    const prompt = `Summarize latest AI news (Gemini, ChatGPT, Claude, etc.) for ${timeRange}. Language: ${language}. Output Markdown. Use Google Search.`;
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL,
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "";
 };

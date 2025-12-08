@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Image as ImageIcon, Copy, Check, Palette, Globe, MoreHorizontal, ThumbsUp, MessageCircle, Share2, PenTool, Link as LinkIcon, Download, LayoutTemplate, Shuffle, FileText, Languages, Maximize2, X, Type, User, Cpu } from 'lucide-react';
+import { Sparkles, Loader2, Image as ImageIcon, Copy, Check, Palette, Globe, MoreHorizontal, ThumbsUp, MessageCircle, Share2, PenTool, Link as LinkIcon, Download, LayoutTemplate, Shuffle, FileText, Languages, Maximize2, X, Type, User, Cpu, MousePointerClick } from 'lucide-react';
 import { generateAdCopy, generateAdImage, analyzeVisualDetailsFromUrl } from '../services/geminiService';
 import { AdCreative } from '../types';
 
@@ -12,12 +12,13 @@ const CreativeLab: React.FC = () => {
   const [gameName, setGameName] = useState('COLOR BLOCK');
   const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
   const [visualDetails, setVisualDetails] = useState('');
-  const [selectedCta, setSelectedCta] = useState('立即下载');
+  const [selectedCta, setSelectedCta] = useState('Download Now (立即下载)');
   const [selectedStyle, setSelectedStyle] = useState('3D Render');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [includeText, setIncludeText] = useState(false);
   const [includeCharacters, setIncludeCharacters] = useState(true);
+  const [includeButton, setIncludeButton] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash-image');
   const [generatedCreatives, setGeneratedCreatives] = useState<AdCreative[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -25,13 +26,15 @@ const CreativeLab: React.FC = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const ctaOptions = [
-    "立即下载",
-    "开始游戏",
-    "安装游戏",
-    "了解更多",
-    "立即购买",
-    "领取奖励",
-    "免费试玩"
+    "Download Now (立即下载)",
+    "Free Download (免费下载)",
+    "Play Game (开始游戏)",
+    "Install Now (安装游戏)",
+    "Free Trial (免费试玩)",
+    "Get Reward (领取奖励)",
+    "Learn More (了解更多)",
+    "Buy Now (立即购买)",
+    "Search (搜索)"
   ];
 
   const modelOptions = [
@@ -97,17 +100,26 @@ const CreativeLab: React.FC = () => {
     setLoadingStage('正在分析创意需求...');
 
     try {
+      let imagePrompt = `A mobile game ad creative for a game called ${gameName}. Concept: ${concept}`;
+      
+      const ctaText = selectedCta.split(' (')[0];
+      if (includeButton && ctaText) {
+          imagePrompt += `. Include a visual call-to-action button with text "${ctaText}"`;
+      }
+
       // Start both requests in parallel
       const imagePromise = generateAdImage(
-        `A mobile game ad creative for a game called ${gameName}. Concept: ${concept}`,
+        imagePrompt,
         aspectRatio,
         selectedStyle,
         visualDetails,
         selectedLanguage,
-        includeText,
+        includeText || (includeButton && !!selectedCta),
         includeCharacters,
         selectedModel
       );
+      
+      // Use clean CTA for copy generation
       const copyPromise = generateAdCopy({ 
         name: gameName, 
         genre: 'Mobile Game', 
@@ -118,7 +130,7 @@ const CreativeLab: React.FC = () => {
         promotionGoal: 'General Promotion',
         promotionPurpose: 'App Promotion',
         storeUrl: storeUrl // Pass store URL
-      }, concept, selectedCta, selectedLanguage);
+      }, concept, ctaText, selectedLanguage);
 
       // Update stage for image generation (usually takes longest)
       setLoadingStage('正在生成营销视觉图像...');
@@ -344,15 +356,29 @@ const CreativeLab: React.FC = () => {
 
         <div>
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">行动号召 (CTA)</label>
-            <select 
-              value={selectedCta}
-              onChange={(e) => setSelectedCta(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {ctaOptions.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-3">
+                <select 
+                  value={selectedCta}
+                  onChange={(e) => setSelectedCta(e.target.value)}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+                >
+                  {ctaOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <label className="flex items-center gap-2 cursor-pointer bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-700 h-[38px]">
+                    <input 
+                        type="checkbox" 
+                        checked={includeButton} 
+                        onChange={(e) => setIncludeButton(e.target.checked)} 
+                        className="w-3.5 h-3.5 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs text-slate-400 flex items-center gap-1 whitespace-nowrap">
+                        <MousePointerClick className="w-3 h-3" />
+                        显示按钮
+                    </span>
+                </label>
+            </div>
         </div>
 
         <button 
@@ -505,7 +531,7 @@ const CreativeLab: React.FC = () => {
 
       {/* Image Preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setPreviewImage(null)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setPreviewImage(null)}>
           <button className="absolute top-4 right-4 p-2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors" onClick={() => setPreviewImage(null)}>
             <X className="w-6 h-6" />
           </button>

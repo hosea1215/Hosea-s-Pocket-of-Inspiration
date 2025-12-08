@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Calculator, TrendingUp, TrendingDown, DollarSign, Clock, AlertCircle, Sparkles, Loader2, Users, Leaf, Bookmark, Copy, Check, Table as TableIcon, Target, FileText } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, DollarSign, Clock, AlertCircle, Sparkles, Loader2, Users, Leaf, Bookmark, Copy, Check, Table as TableIcon, Target, FileText, MapPin, ChevronDown, X } from 'lucide-react';
 import { EconomicMetrics } from '../types';
 import { analyzeGameEconomics } from '../services/geminiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, AreaChart, Area, ComposedChart, Bar } from 'recharts';
@@ -32,6 +32,11 @@ const LtvCalculator: React.FC = () => {
     dailyUa: 10000    // Default 10000
   });
   
+  // Country Selection State
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(['US']);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [calculationResults, setCalculationResults] = useState<any[]>([]);
   const [dailyOpData, setDailyOpData] = useState<DailyOpData[]>([]);
   const [paybackDay, setPaybackDay] = useState<number | null>(null);
@@ -46,6 +51,47 @@ const LtvCalculator: React.FC = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const tiers = [
+    {
+      name: 'T1 (成熟/高价值市场)',
+      countries: [
+        { code: 'US', name: '美国 (US)' },
+        { code: 'JP', name: '日本 (JP)' },
+        { code: 'KR', name: '韩国 (KR)' },
+        { code: 'UK', name: '英国 (UK)' },
+        { code: 'DE', name: '德国 (DE)' },
+        { code: 'FR', name: '法国 (FR)' },
+        { code: 'CA', name: '加拿大 (CA)' },
+        { code: 'AU', name: '澳大利亚 (AU)' },
+      ]
+    },
+    {
+      name: 'T2 (潜力/增长市场)',
+      countries: [
+        { code: 'TW', name: '中国台湾 (TW)' },
+        { code: 'HK', name: '中国香港 (HK)' },
+        { code: 'BR', name: '巴西 (BR)' },
+        { code: 'IT', name: '意大利 (IT)' },
+        { code: 'ES', name: '西班牙 (ES)' },
+        { code: 'RU', name: '俄罗斯 (RU)' },
+        { code: 'TR', name: '土耳其 (TR)' },
+        { code: 'SA', name: '沙特 (SA)' },
+      ]
+    },
+    {
+      name: 'T3 (流量/新兴市场)',
+      countries: [
+        { code: 'IN', name: '印度 (IN)' },
+        { code: 'ID', name: '印尼 (ID)' },
+        { code: 'VN', name: '越南 (VN)' },
+        { code: 'TH', name: '泰国 (TH)' },
+        { code: 'PH', name: '菲律宾 (PH)' },
+        { code: 'MY', name: '马来西亚 (MY)' },
+        { code: 'MX', name: '墨西哥 (MX)' },
+      ]
+    }
+  ];
 
   const gameTemplates = [
     {
@@ -85,9 +131,46 @@ const LtvCalculator: React.FC = () => {
     }
   ];
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   useEffect(() => {
     calculateLtv();
   }, [metrics]);
+
+  const toggleCountry = (code: string) => {
+    setSelectedCountries(prev => 
+      prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+    );
+  };
+
+  const toggleTier = (tierCountries: {code: string}[]) => {
+    const codes = tierCountries.map(c => c.code);
+    const allSelected = codes.every(c => selectedCountries.includes(c));
+    
+    if (allSelected) {
+      setSelectedCountries(prev => prev.filter(c => !codes.includes(c)));
+    } else {
+      setSelectedCountries(prev => [...new Set([...prev, ...codes])]);
+    }
+  };
+
+  const removeCountry = (code: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedCountries(prev => prev.filter(c => c !== code));
+  };
 
   const calculateLtv = () => {
     // Collect available valid retention points
@@ -256,7 +339,7 @@ const LtvCalculator: React.FC = () => {
     setAnalyzing(true);
     setAiAnalysis(null);
     try {
-      const result = await analyzeGameEconomics(metrics);
+      const result = await analyzeGameEconomics(metrics, selectedCountries.join(', '));
       setAiAnalysis(result);
     } catch (error) {
       console.error(error);
@@ -299,6 +382,71 @@ const LtvCalculator: React.FC = () => {
 
         <div className="space-y-6 flex-1 overflow-y-auto custom-scrollbar">
           
+          <div ref={dropdownRef} className="relative">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <MapPin className="w-3 h-3" /> 目标国家 (多选)
+            </label>
+            
+            {/* Custom Multi-Select Trigger */}
+            <div 
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 min-h-[46px] cursor-pointer hover:border-slate-600 transition-colors flex flex-wrap gap-2 items-center"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+                {selectedCountries.length === 0 && <span className="text-slate-500 text-sm">选择目标国家...</span>}
+                {selectedCountries.map(code => (
+                    <span key={code} className="bg-indigo-600/20 text-indigo-300 text-xs px-2 py-1 rounded flex items-center gap-1 border border-indigo-600/30">
+                        {code}
+                        <X 
+                            className="w-3 h-3 hover:text-white cursor-pointer" 
+                            onClick={(e) => removeCountry(code, e)}
+                        />
+                    </span>
+                ))}
+                <div className="ml-auto">
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+            </div>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+                <div className="absolute z-50 mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-[400px] overflow-y-auto custom-scrollbar p-2">
+                    {tiers.map((tier, idx) => {
+                        const allSelected = tier.countries.every(c => selectedCountries.includes(c.code));
+                        return (
+                            <div key={idx} className="mb-4 last:mb-0">
+                                <div 
+                                    className="flex items-center justify-between px-2 py-1.5 bg-slate-800/50 rounded mb-2 cursor-pointer hover:bg-slate-800 transition-colors"
+                                    onClick={() => toggleTier(tier.countries)}
+                                >
+                                    <span className="text-xs font-bold text-slate-300">{tier.name}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${allSelected ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                                        {allSelected ? '全选' : '选择全部'}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 px-1">
+                                    {tier.countries.map(country => {
+                                        const isSelected = selectedCountries.includes(country.code);
+                                        return (
+                                            <div 
+                                                key={country.code} 
+                                                className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors border ${isSelected ? 'bg-indigo-600/20 border-indigo-600/50' : 'hover:bg-slate-800 border-transparent'}`}
+                                                onClick={() => toggleCountry(country.code)}
+                                            >
+                                                <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600'}`}>
+                                                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                                                </div>
+                                                <span className={`text-xs ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>{country.name}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+          </div>
+
           <div className="p-4 bg-indigo-900/10 rounded-lg border border-indigo-500/20">
              <h3 className="text-indigo-300 font-semibold text-sm mb-3">基础指标输入</h3>
              <div className="space-y-4">

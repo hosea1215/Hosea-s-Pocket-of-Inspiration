@@ -365,7 +365,7 @@ const CompetitorAnalysis: React.FC = () => {
                                 paddingAngle={5}
                                 dataKey="value"
                               >
-                                {market.genderDistribution.map((entry, index) => (
+                                {market.genderDistribution?.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={index === 0 ? '#60a5fa' : '#f472b6'} />
                                 ))}
                               </Pie>
@@ -391,7 +391,7 @@ const CompetitorAnalysis: React.FC = () => {
                                 paddingAngle={2}
                                 dataKey="value"
                               >
-                                {market.ageDistribution.map((entry, index) => (
+                                {market.ageDistribution?.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                               </Pie>

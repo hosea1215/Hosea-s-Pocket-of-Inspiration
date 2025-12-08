@@ -125,7 +125,7 @@ const MarketingCalendar: React.FC = () => {
       const countriesStr = selectedCountries.join(', ');
       const result = await generateMarketingCalendar(countriesStr, year, quarter, language);
       setCalendarContent(result.markdown);
-      if (result.chartData) {
+      if (result.chartData && Array.isArray(result.chartData)) {
         setChartData(result.chartData);
       }
     } catch (error) {

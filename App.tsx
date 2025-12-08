@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import StrategyGenerator from './components/StrategyGenerator';
+import OmnichannelStrategy from './components/OmnichannelStrategy';
 import CreativeLab from './components/CreativeLab';
 import IconGenerator from './components/IconGenerator';
 import CopyGenerator from './components/CopyGenerator';
@@ -31,7 +32,9 @@ import IapPricingDesign from './components/IapPricingDesign';
 import GooglePlayNews from './components/GooglePlayNews';
 import AppStoreNews from './components/AppStoreNews';
 import AdTechNews from './components/AdTechNews';
+import AiNews from './components/AiNews';
 import MarketingCalendar from './components/MarketingCalendar';
+import ImageReplicator from './components/ImageReplicator';
 import { AppView } from './types';
 import { Search, Megaphone, Zap, BarChart2, Smartphone, Music } from 'lucide-react';
 
@@ -50,6 +53,8 @@ const App: React.FC = () => {
         return <StrategyGenerator platform="Apple Search Ads" />;
       case AppView.APPLOVIN_STRATEGY:
         return <StrategyGenerator platform="AppLovin" />;
+      case AppView.OMNICHANNEL_STRATEGY:
+        return <OmnichannelStrategy />;
       case AppView.ASO_KEYWORDS:
         return <AsoKeywords />;
       case AppView.CPE_GEN:
@@ -58,6 +63,8 @@ const App: React.FC = () => {
         return <MarketingCalendar />;
       case AppView.CREATIVE:
         return <CreativeLab />;
+      case AppView.IMAGE_REPLICATION:
+        return <ImageReplicator />;
       case AppView.ICON_GEN:
         return <IconGenerator />;
       case AppView.COPY_GEN:
@@ -104,6 +111,8 @@ const App: React.FC = () => {
         return <IapMonetization />;
       case AppView.IAP_PRICING:
         return <IapPricingDesign />;
+      case AppView.AI_NEWS:
+        return <AiNews />;
       case AppView.GOOGLE_PLAY_NEWS:
         return <GooglePlayNews />;
       case AppView.APPSTORE_NEWS:
@@ -136,10 +145,12 @@ const App: React.FC = () => {
       case AppView.TIKTOK_ADS_STRATEGY: return 'TIKTOK ADS广告策略';
       case AppView.APPLE_ADS_STRATEGY: return 'APPLE ADS广告策略';
       case AppView.APPLOVIN_STRATEGY: return 'APPLOVIN广告策略';
+      case AppView.OMNICHANNEL_STRATEGY: return '全渠道发行策略';
       case AppView.ASO_KEYWORDS: return 'ASO 关键词分析';
       case AppView.CPE_GEN: return '买量事件生成器';
       case AppView.MARKETING_CALENDAR: return '主要国家营销日历';
       case AppView.CREATIVE: return 'FACEBOOK图文广告创意';
+      case AppView.IMAGE_REPLICATION: return '图片素材仿制';
       case AppView.ICON_GEN: return '谷歌商店ICON生成';
       case AppView.COPY_GEN: return 'FACEBOOK广告文案';
       case AppView.ASMR_RESEARCH: return '游戏ASMR研究应用';
@@ -163,6 +174,7 @@ const App: React.FC = () => {
       case AppView.IAA_BIDDING: return '广告变现竞价设计';
       case AppView.IAP_MONETIZATION: return 'IAP游戏商业化方案';
       case AppView.IAP_PRICING: return '内购计费组合设计';
+      case AppView.AI_NEWS: return '获得 AI 新闻';
       case AppView.GOOGLE_PLAY_NEWS: return 'GOOGLE PLAY最新资讯';
       case AppView.APPSTORE_NEWS: return 'APPSTORE最新资讯';
       case AppView.GOOGLE_ADS_NEWS: return 'GOOGLE ADS最新资讯';
