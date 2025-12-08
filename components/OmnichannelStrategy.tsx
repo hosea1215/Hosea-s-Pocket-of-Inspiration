@@ -1,16 +1,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, Globe, Send, Link as LinkIcon, Copy, Check, MapPin, X, ChevronDown, FileText, Search } from 'lucide-react';
+import { Loader2, Globe, Send, Link as LinkIcon, Copy, Check, MapPin, X, ChevronDown, FileText, Search, Maximize2, Activity } from 'lucide-react';
 import { GameDetails } from '../types';
 import { generateOmnichannelStrategy } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, LabelList } from 'recharts';
 
 const OmnichannelStrategy: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
+  const [showChartModal, setShowChartModal] = useState(false);
   
   // Custom states for this component
   const [gpUrl, setGpUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
@@ -80,6 +82,38 @@ const OmnichannelStrategy: React.FC = () => {
       ]
     }
   ];
+
+  // Chart Data mimicking Product Life Cycle
+  const lifecycleData = [
+    { x: 0, y: 10 },
+    { x: 25, y: 18, label: '新用户留存' },
+    { x: 50, y: 35 },
+    { x: 75, y: 65, label: '大力拉新' },
+    { x: 100, y: 88 },
+    { x: 125, y: 95, label: '活跃用户留存&营收' },
+    { x: 150, y: 92 },
+    { x: 175, y: 80, label: '流失用户召回&新方向' },
+    { x: 200, y: 65 },
+  ];
+
+  // Custom Label Render
+  const CustomLabel = (props: any) => {
+    const { x, y, value } = props;
+    if (!value) return null;
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        dy={-10} 
+        fill="#f87171" 
+        fontSize={10} 
+        textAnchor="middle" 
+        fontWeight="bold"
+      >
+        {value}
+      </text>
+    );
+  };
 
   // Sync selected countries to details.market
   useEffect(() => {
@@ -163,6 +197,45 @@ const OmnichannelStrategy: React.FC = () => {
     if (!plan) return;
     exportToGoogleDocs(plan, `Omnichannel Strategy - ${details.name}`);
   };
+
+  const LifecycleChart = ({ height = "100%" }: { height?: string | number }) => (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={lifecycleData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+        <XAxis 
+          dataKey="x" 
+          type="number" 
+          domain={[0, 200]} 
+          ticks={[25, 75, 125, 175]} 
+          tickFormatter={(val) => {
+             if(val === 25) return '探索期';
+             if(val === 75) return '成长期';
+             if(val === 125) return '成熟期';
+             if(val === 175) return '衰退期';
+             return '';
+          }}
+          stroke="#94a3b8"
+          fontSize={12}
+          tickMargin={10}
+        />
+        <YAxis hide domain={[0, 110]} />
+        <ReferenceLine x={50} stroke="#64748b" strokeDasharray="3 3" />
+        <ReferenceLine x={100} stroke="#64748b" strokeDasharray="3 3" />
+        <ReferenceLine x={150} stroke="#64748b" strokeDasharray="3 3" />
+        
+        <Line 
+          type="monotone" 
+          dataKey="y" 
+          stroke="#2dd4bf" 
+          strokeWidth={3} 
+          dot={{ r: 3, fill: "#2dd4bf" }}
+          isAnimationActive={true}
+        >
+          <LabelList content={<CustomLabel />} dataKey="label" />
+        </Line>
+      </LineChart>
+    </ResponsiveContainer>
+  );
 
   return (
     <div className="flex h-full gap-6">
@@ -363,6 +436,26 @@ const OmnichannelStrategy: React.FC = () => {
                <li><strong className="text-slate-300">Phasing:</strong> 测试期、爆发期、稳定期的节奏规划。</li>
                <li><strong className="text-slate-300">KPIs:</strong> 核心指标基准 (CPI, ROAS, Retention)。</li>
              </ul>
+             
+             {/* Chart Trigger Section */}
+             <div className="mt-4 pt-3 border-t border-indigo-500/20">
+                <div 
+                  className="bg-slate-900/50 rounded-lg p-3 cursor-pointer hover:bg-slate-900 transition-colors group relative overflow-hidden"
+                  onClick={() => setShowChartModal(true)}
+                >
+                   <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-300 flex items-center gap-1">
+                        <Activity className="w-3 h-3 text-teal-400" />
+                        产品生命周期目标
+                      </span>
+                      <Maximize2 className="w-3 h-3 text-slate-500 group-hover:text-white transition-colors" />
+                   </div>
+                   <div className="h-24 w-full pointer-events-none opacity-80">
+                      <LifecycleChart height="100%" />
+                   </div>
+                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent pointer-events-none group-hover:bg-white/5 transition-colors"></div>
+                </div>
+             </div>
           </div>
         </div>
       </div>
@@ -405,6 +498,46 @@ const OmnichannelStrategy: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Chart Modal */}
+      {showChartModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowChartModal(false)}>
+          <div className="bg-slate-900 border border-slate-700 w-[800px] max-w-[95vw] rounded-2xl shadow-2xl overflow-hidden p-6" onClick={e => e.stopPropagation()}>
+             <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Activity className="w-6 h-6 text-teal-400" />
+                  产品生命周期目标图表
+                </h3>
+                <button onClick={() => setShowChartModal(false)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+             </div>
+             
+             <div className="h-[400px] w-full bg-slate-950/50 rounded-xl border border-slate-800 p-4">
+                <LifecycleChart height="100%" />
+             </div>
+             
+             <div className="mt-6 grid grid-cols-4 gap-4 text-center">
+                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                   <div className="text-xs text-slate-400 font-bold uppercase mb-1">探索期</div>
+                   <div className="text-red-400 font-bold text-sm">新用户留存</div>
+                </div>
+                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                   <div className="text-xs text-slate-400 font-bold uppercase mb-1">成长期</div>
+                   <div className="text-red-400 font-bold text-sm">大力拉新</div>
+                </div>
+                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                   <div className="text-xs text-slate-400 font-bold uppercase mb-1">成熟期</div>
+                   <div className="text-red-400 font-bold text-sm">活跃留存 & 营收</div>
+                </div>
+                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                   <div className="text-xs text-slate-400 font-bold uppercase mb-1">衰退期</div>
+                   <div className="text-red-400 font-bold text-sm">召回 & 新方向</div>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

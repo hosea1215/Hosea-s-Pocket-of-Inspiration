@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Swords, Loader2, Copy, Check, Link as LinkIcon, Search, RefreshCw, BarChart2, Globe, Clock, Users, Percent, Target, Heart, Briefcase, Wallet, Gamepad2, Layers, Repeat, Zap, Bell, Volume2, Store, Palette, MessageCircle, Share2, Code, Flag, AlertTriangle, User, Calendar, TrendingUp, Smartphone, MessageSquare, FileText } from 'lucide-react';
 import { analyzeCompetitor, extractGameNameFromUrl } from '../services/geminiService';
-import { CompetitorMetrics, TargetAudience, CompetitorReport, MarketPerformance } from '../types';
+import { CompetitorMetrics, TargetAudience, CompetitorReport, MarketPerformance, AiMetadata } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { exportToGoogleDocs } from '../utils/exportUtils';
+import AiMetaDisplay from './AiMetaDisplay';
 
 const CompetitorAnalysis: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,7 @@ const CompetitorAnalysis: React.FC = () => {
   const [metrics, setMetrics] = useState<CompetitorMetrics | null>(null);
   const [audience, setAudience] = useState<TargetAudience | null>(null);
   const [market, setMarket] = useState<MarketPerformance | null>(null);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
 
   const handleAnalyze = async () => {
@@ -28,12 +30,14 @@ const CompetitorAnalysis: React.FC = () => {
     setMetrics(null);
     setAudience(null);
     setMarket(null);
+    setMeta(null);
     try {
-      const result = await analyzeCompetitor(gameName, storeUrl);
-      setReport(result.report);
-      setMetrics(result.metrics);
-      setAudience(result.audience);
-      setMarket(result.market);
+      const { data, meta } = await analyzeCompetitor(gameName, storeUrl);
+      setReport(data.report);
+      setMetrics(data.metrics);
+      setAudience(data.audience);
+      setMarket(data.market);
+      setMeta(meta);
     } catch (error) {
       console.error(error);
       alert("分析失败，请重试。");
@@ -461,6 +465,8 @@ const CompetitorAnalysis: React.FC = () => {
                    <AnalysisCard title="SWOT 分析" icon={AlertTriangle} content={report.swot} colorClass="text-amber-400" />
                 </div>
               )}
+              
+              <AiMetaDisplay metadata={meta} />
             </div>
           </>
         ) : (

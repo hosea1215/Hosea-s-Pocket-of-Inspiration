@@ -53,6 +53,10 @@ const App: React.FC = () => {
         return <StrategyGenerator platform="Apple Search Ads" />;
       case AppView.APPLOVIN_STRATEGY:
         return <StrategyGenerator platform="AppLovin" />;
+      case AppView.PRE_INSTALL_STRATEGY:
+        return <StrategyGenerator platform="OEM (Pre-install)" />;
+      case AppView.WEB2APP_STRATEGY:
+        return <StrategyGenerator platform="Web2App" />;
       case AppView.OMNICHANNEL_STRATEGY:
         return <OmnichannelStrategy />;
       case AppView.ASO_KEYWORDS:
@@ -145,6 +149,8 @@ const App: React.FC = () => {
       case AppView.TIKTOK_ADS_STRATEGY: return 'TIKTOK ADS广告策略';
       case AppView.APPLE_ADS_STRATEGY: return 'APPLE ADS广告策略';
       case AppView.APPLOVIN_STRATEGY: return 'APPLOVIN广告策略';
+      case AppView.PRE_INSTALL_STRATEGY: return '预装渠道广告策略';
+      case AppView.WEB2APP_STRATEGY: return 'WEB2APP策略';
       case AppView.OMNICHANNEL_STRATEGY: return '全渠道发行策略';
       case AppView.ASO_KEYWORDS: return 'ASO 关键词分析';
       case AppView.CPE_GEN: return '买量事件生成器';

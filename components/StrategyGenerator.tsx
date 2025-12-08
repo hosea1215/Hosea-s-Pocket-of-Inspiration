@@ -2,9 +2,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Loader2, Zap, Send, Link as LinkIcon, Copy, Check, Search, FileText, Globe, MapPin, X, ChevronDown } from 'lucide-react';
-import { GameDetails } from '../types';
+import { GameDetails, AiMetadata } from '../types';
 import { generateMarketingPlan, generateAsoAnalysis } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
+import AiMetaDisplay from './AiMetaDisplay';
 
 interface StrategyGeneratorProps {
   platform?: string;
@@ -14,6 +15,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
   const [loading, setLoading] = useState(false);
   const [asoLoading, setAsoLoading] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
   
@@ -149,9 +151,11 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
     }
     setLoading(true);
     setPlan(null);
+    setMeta(null);
     try {
-      const generatedPlan = await generateMarketingPlan(details, platform, language);
-      setPlan(generatedPlan);
+      const { data, meta } = await generateMarketingPlan(details, platform, language);
+      setPlan(data);
+      setMeta(meta);
     } catch (error) {
       console.error(error);
       alert("无法生成策略，请重试。");
@@ -166,10 +170,12 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
         return;
     }
     setAsoLoading(true);
-    setPlan(null); // Clear previous plan to show ASO results cleanly
+    setPlan(null); 
+    setMeta(null);
     try {
-      const analysis = await generateAsoAnalysis(details, language);
-      setPlan(analysis);
+      const { data, meta } = await generateAsoAnalysis(details, language);
+      setPlan(data);
+      setMeta(meta);
     } catch (error) {
       console.error(error);
       alert("无法生成 ASO 分析，请重试。");
@@ -197,6 +203,65 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
     if (!plan) return;
     exportToGoogleDocs(plan, `${platform} Marketing Strategy - ${details.name}`);
   };
+
+  const isOEM = platform === 'OEM (Pre-install)';
+  const isWeb2App = platform === 'Web2App';
+
+  const strategyDimensions: Record<string, { label: string; value: string }[]> = {
+    "OEM (Pre-install)": [
+      { label: "厂商生态", value: "Samsung, Xiaomi, OPPO, vivo, Transsion" },
+      { label: "核心资源位", value: "应用商店 (Store), 负一屏, 游戏中心, OOBE (开机向导)" },
+      { label: "计费模式", value: "CPD (下载), CPT (时长), CPA (激活), CPD (天)" },
+      { label: "归因逻辑", value: "设备号匹配 (IMEI/OAID), 预装归因窗口期" },
+      { label: "用户价值", value: "运营商与机型决定用户LTV上限，需针对性出价" },
+      { label: "素材注意", value: "素材需符合厂商生态审美，避免过度商业化设计" },
+      { label: "激活延时", value: "预装到达与用户激活存在时间差，数据回传有滞后性" },
+      { label: "渠道配合", value: "与买量渠道打配合战，覆盖盲区，提升整体渗透率" }
+    ],
+    "Web2App": [
+      { label: "落地页策略", value: "Landing Page (Article, Quiz, Store-lookalike)" },
+      { label: "归因链路", value: "Web-to-App Attribution, SKAdNetwork, Probabilistic" },
+      { label: "漏斗优化", value: "Click -> LP View -> Store View -> Install -> Event" },
+      { label: "合规风险", value: "Cloaking, Platform Policy (Google/FB/Apple)" }
+    ],
+    "Facebook": [
+      { label: "广告架构", value: "AAA vs Manual Campaigns" },
+      { label: "受众定向", value: "Broad, Lookalike, Interest" },
+      { label: "素材形式", value: "Video, Static, Playable" },
+      { label: "竞价策略", value: "Lowest Cost, Cost Cap, Bid Cap" }
+    ],
+    "Google Ads": [
+      { label: "Campaign Type", value: "App Campaigns (AC) 1.0/2.0/3.0" },
+      { label: "网络覆盖", value: "Search, Play, YouTube, Display" },
+      { label: "素材资产", value: "Text, Image, Video, HTML5" },
+      { label: "出价模式", value: "tCPI, tROAS" }
+    ],
+    "TikTok Ads": [
+      { label: "广告形式", value: "In-Feed Ads, Pangle, TopView" },
+      { label: "受众定向", value: "Hashtags, Creators, Behaviors" },
+      { label: "素材风格", value: "UGC-style, Native, Fast-paced" },
+      { label: "竞价策略", value: "Cost Cap, Lowest Cost" }
+    ],
+    "Apple Search Ads": [
+      { label: "广告位", value: "Search Tab, Search Results, Today Tab" },
+      { label: "关键词策略", value: "Brand, Generic, Competitor, Discovery" },
+      { label: "匹配模式", value: "Exact Match, Broad Match" },
+      { label: "受众", value: "New vs Returning Users" }
+    ],
+    "AppLovin": [
+      { label: "广告形式", value: "Rewarded Video, Interstitial, Banner" },
+      { label: "竞价模式", value: "MAX Bidding (Header Bidding)" },
+      { label: "优选", value: "IAP ROAS, Ad ROAS" },
+      { label: "素材", value: "Playable Ads, Video" }
+    ]
+  };
+
+  const currentDimensions = strategyDimensions[platform] || [
+      { label: "广告架构", value: "Campaign Structure & Setup" },
+      { label: "受众定向", value: "Targeting & Segmentation" },
+      { label: "素材策略", value: "Creative Formats & Angles" },
+      { label: "竞价优化", value: "Bidding & Budget Allocation" }
+  ];
 
   return (
     <div className="flex h-full gap-6">
@@ -416,14 +481,29 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
             {loading ? '分析中...' : `生成 ${platform} 广告策略`}
           </button>
           
-          <button 
-            onClick={handleAsoAnalysis} 
-            disabled={loading || asoLoading}
-            className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600"
-          >
-            {asoLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-            {asoLoading ? '分析中...' : 'ASO 关键词分析'}
-          </button>
+          { !isOEM && !isWeb2App && (
+            <button 
+              onClick={handleAsoAnalysis} 
+              disabled={loading || asoLoading}
+              className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600"
+            >
+              {asoLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              {asoLoading ? '分析中...' : 'ASO 关键词分析'}
+            </button>
+          )}
+
+          <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20 mt-2">
+             <h4 className="text-indigo-300 font-bold text-xs mb-2 flex items-center gap-1">
+               <Search className="w-3 h-3" /> 策略维度
+             </h4>
+             <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
+               {currentDimensions.map((dim, idx) => (
+                 <li key={idx}>
+                   <strong className="text-slate-300">{dim.label}:</strong> {dim.value}
+                 </li>
+               ))}
+             </ul>
+          </div>
         </div>
       </div>
 
@@ -453,6 +533,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
             </div>
             <div className="prose prose-invert prose-indigo max-w-none overflow-y-auto pr-4 custom-scrollbar">
                <ReactMarkdown>{plan}</ReactMarkdown>
+               <AiMetaDisplay metadata={meta} />
             </div>
           </>
         ) : (
@@ -461,7 +542,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
                <Zap className="w-10 h-10 text-slate-600" />
              </div>
              <p className="text-lg font-medium">准备规划</p>
-             <p className="text-sm max-w-xs text-center mt-2">填写左侧详情，点击“生成 {platform} 广告策略”或“ASO 关键词分析”。</p>
+             <p className="text-sm max-w-xs text-center mt-2">填写左侧详情，点击“生成 {platform} 广告策略”{ !isOEM && !isWeb2App ? '或“ASO 关键词分析”' : ''}。</p>
           </div>
         )}
       </div>

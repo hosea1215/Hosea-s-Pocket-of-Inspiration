@@ -4,11 +4,14 @@ import ReactMarkdown from 'react-markdown';
 import { Newspaper, Loader2, Copy, Check, FileText, Globe, ExternalLink, RefreshCw } from 'lucide-react';
 import { generateGooglePlayNews } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
+import { AiMetadata } from '../types';
+import AiMetaDisplay from './AiMetaDisplay';
 
 const GooglePlayNews: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
   const [news, setNews] = useState<string | null>(null);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
 
   const languages = [
@@ -22,9 +25,11 @@ const GooglePlayNews: React.FC = () => {
   const handleGenerate = async () => {
     setLoading(true);
     setNews(null);
+    setMeta(null);
     try {
-      const result = await generateGooglePlayNews(language);
-      setNews(result);
+      const { data, meta } = await generateGooglePlayNews(language);
+      setNews(data);
+      setMeta(meta);
     } catch (error) {
       console.error(error);
       alert("获取资讯失败，请重试。");
@@ -130,6 +135,7 @@ const GooglePlayNews: React.FC = () => {
                >
                  {news}
                </ReactMarkdown>
+               <AiMetaDisplay metadata={meta} />
             </div>
           </>
         ) : (

@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { Bell, Loader2, Copy, Check, MessageSquare, Link as LinkIcon, Smile, Clock, Zap, ListOrdered } from 'lucide-react';
+import { Bell, Loader2, Copy, Check, MessageSquare, Link as LinkIcon, Smile, Clock, Zap, ListOrdered, MousePointerClick, Languages } from 'lucide-react';
 import { generatePushStrategy } from '../services/geminiService';
-import { PushStrategyResponse } from '../types';
+import { PushStrategyResponse, AiMetadata } from '../types';
+import AiMetaDisplay from './AiMetaDisplay';
 
 const PushStrategy: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -13,11 +14,14 @@ const PushStrategy: React.FC = () => {
   const [language, setLanguage] = useState('English (英文)');
   const [includeEmojis, setIncludeEmojis] = useState(true);
   
-  // New configuration states
+  // Configuration states
   const [countPerCategory, setCountPerCategory] = useState(6);
   const [includeTiming, setIncludeTiming] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(true);
+  const [selectedTriggers, setSelectedTriggers] = useState<string[]>(['Offline (离线召回)', 'Level (关卡进度)']);
 
   const [strategy, setStrategy] = useState<PushStrategyResponse>([]);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Full Google Play Categories
@@ -55,6 +59,24 @@ const PushStrategy: React.FC = () => {
     "Russian (俄语)"
   ];
 
+  const triggerOptions = [
+    "Offline (离线召回)",
+    "Level (关卡进度)",
+    "Resources (体力/资源)",
+    "Event (限时活动)",
+    "Social (好友/公会)",
+    "Shop (商店/促销)",
+    "Achievement (成就达成)"
+  ];
+
+  const toggleTrigger = (trigger: string) => {
+    setSelectedTriggers(prev => 
+      prev.includes(trigger) 
+        ? prev.filter(t => t !== trigger)
+        : [...prev, trigger]
+    );
+  };
+
   const handleGenerate = async () => {
     if (!gameName) {
         alert("请输入游戏名称");
@@ -62,8 +84,9 @@ const PushStrategy: React.FC = () => {
     }
     setLoading(true);
     setStrategy([]);
+    setMeta(null);
     try {
-      const result = await generatePushStrategy(
+      const { data, meta } = await generatePushStrategy(
         gameName, 
         genre, 
         tone, 
@@ -71,9 +94,11 @@ const PushStrategy: React.FC = () => {
         storeUrl, 
         includeEmojis, 
         countPerCategory, 
-        includeTiming
+        includeTiming,
+        selectedTriggers
       );
-      setStrategy(Array.isArray(result) ? result : []);
+      setStrategy(Array.isArray(data) ? data : []);
+      setMeta(meta);
     } catch (error) {
       console.error(error);
       alert("生成策略失败，请重试。");
@@ -166,6 +191,30 @@ const PushStrategy: React.FC = () => {
 
           <div>
              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <MousePointerClick className="w-3 h-3" /> 触发条件 (多选)
+             </label>
+             <div className="flex flex-wrap gap-2">
+               {triggerOptions.map(trigger => {
+                 const isSelected = selectedTriggers.includes(trigger);
+                 return (
+                   <button
+                     key={trigger}
+                     onClick={() => toggleTrigger(trigger)}
+                     className={`text-[10px] px-2 py-1.5 rounded border transition-colors ${
+                       isSelected 
+                         ? 'bg-indigo-600 border-indigo-500 text-white' 
+                         : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                     }`}
+                   >
+                     {trigger}
+                   </button>
+                 );
+               })}
+             </div>
+          </div>
+
+          <div>
+             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                <ListOrdered className="w-3 h-3" /> 每类生成条数
              </label>
              <input 
@@ -190,6 +239,21 @@ const PushStrategy: React.FC = () => {
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" checked={includeEmojis} onChange={(e) => setIncludeEmojis(e.target.checked)} className="sr-only peer" />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            {/* Translation Toggle */}
+            <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
+              <div className={`p-2 rounded-lg ${showTranslation ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
+                <Languages className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-white block">显示中文翻译</span>
+                <span className="text-xs text-slate-500">在结果中包含中文对照</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={showTranslation} onChange={(e) => setShowTranslation(e.target.checked)} className="sr-only peer" />
                 <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
               </label>
             </div>
@@ -279,13 +343,22 @@ const PushStrategy: React.FC = () => {
 
                            {/* Details & Translation */}
                            <div className="pt-3 border-t border-slate-800 mt-2 space-y-2">
-                              <p className="text-xs text-slate-500 italic">{note.translation}</p>
-                              {note.timing && (
-                                <div className="flex items-center gap-1.5 text-[10px] text-indigo-300 bg-indigo-900/20 w-fit px-2 py-1 rounded">
-                                   <Clock className="w-3 h-3" />
-                                   <span>{note.timing}</span>
-                                </div>
-                              )}
+                              {showTranslation && <p className="text-xs text-slate-500 italic">{note.translation}</p>}
+                              
+                              <div className="flex flex-wrap gap-2">
+                                {note.timing && (
+                                    <div className="flex items-center gap-1.5 text-[10px] text-indigo-300 bg-indigo-900/20 w-fit px-2 py-1 rounded">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{note.timing}</span>
+                                    </div>
+                                )}
+                                {note.triggerCondition && (
+                                    <div className="flex items-center gap-1.5 text-[10px] text-yellow-300 bg-yellow-900/20 w-fit px-2 py-1 rounded">
+                                    <MousePointerClick className="w-3 h-3" />
+                                    <span>Trigger: {note.triggerCondition}</span>
+                                    </div>
+                                )}
+                              </div>
                            </div>
                         </div>
                       );
@@ -293,6 +366,8 @@ const PushStrategy: React.FC = () => {
                   </div>
                 </div>
               ))}
+              
+              <AiMetaDisplay metadata={meta} />
             </div>
           </>
         ) : (

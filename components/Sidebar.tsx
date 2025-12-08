@@ -53,7 +53,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: AppView.TIKTOK_ADS_STRATEGY, label: 'TIKTOK ADS广告策略', icon: Music },
     { id: AppView.APPLE_ADS_STRATEGY, label: 'APPLE ADS广告策略', icon: Smartphone },
     { id: AppView.APPLOVIN_STRATEGY, label: 'APPLOVIN广告策略', icon: Zap },
+    { id: AppView.PRE_INSTALL_STRATEGY, label: '预装渠道广告策略', icon: Smartphone },
     { id: AppView.CPE_GEN, label: '买量事件生成器', icon: Trophy },
+    { id: AppView.WEB2APP_STRATEGY, label: 'WEB2APP策略', icon: Monitor },
     { id: AppView.MARKETING_CALENDAR, label: '主要国家营销日历', icon: Calendar },
   ];
 
