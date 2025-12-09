@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, Trophy, Crosshair, Clock, BarChart, Layers, Zap, Target, Link as LinkIcon, Sparkles, Percent, Hourglass } from 'lucide-react';
+import { Loader2, Trophy, Crosshair, Clock, BarChart, Layers, Zap, Target, Link as LinkIcon, Sparkles, Percent, Hourglass, Cpu } from 'lucide-react';
 import { generateCpeEvents, analyzeGameplayFromUrl } from '../services/geminiService';
 import { CpeEvent } from '../types';
 
@@ -16,6 +16,7 @@ const CpeGenerator: React.FC = () => {
   const [comboCount, setComboCount] = useState(6);
   const [singleEvents, setSingleEvents] = useState<CpeEvent[]>([]);
   const [comboEvents, setComboEvents] = useState<CpeEvent[]>([]);
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
 
   // Full Google Play Categories with Chinese Translations
   const googlePlayGenres = [
@@ -26,6 +27,11 @@ const CpeGenerator: React.FC = () => {
     "Word (文字)"
   ];
 
+  const modelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
+  ];
+
   const handleGenerate = async () => {
     if (!gameName || !gameplay) return;
     
@@ -33,10 +39,10 @@ const CpeGenerator: React.FC = () => {
     setSingleEvents([]); 
     setComboEvents([]);
     try {
-      const data = await generateCpeEvents(gameName, genre, gameplay, acquisitionGoal, singleCount, comboCount);
+      const response = await generateCpeEvents(gameName, genre, gameplay, acquisitionGoal, singleCount, comboCount, selectedModel);
       // Safety check: ensure arrays exist
-      setSingleEvents(Array.isArray(data.singleEvents) ? data.singleEvents : []);
-      setComboEvents(Array.isArray(data.comboEvents) ? data.comboEvents : []);
+      setSingleEvents(Array.isArray(response.data.singleEvents) ? response.data.singleEvents : []);
+      setComboEvents(Array.isArray(response.data.comboEvents) ? response.data.comboEvents : []);
     } catch (error) {
       console.error(error);
       alert("生成 CPE 事件失败，请重试。");
@@ -211,6 +217,21 @@ const CpeGenerator: React.FC = () => {
                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
                />
              </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Cpu className="w-3 h-3" /> AI 模型
+            </label>
+            <select 
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {modelOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
 
           <div>

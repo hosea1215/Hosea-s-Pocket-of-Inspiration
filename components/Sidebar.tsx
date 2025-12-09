@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -35,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const mainNavItems = [
     { id: AppView.LTV_CALCULATOR, label: '游戏LTV&回本估算器', icon: Calculator },
     { id: AppView.COMPETITOR_ANALYSIS, label: '竞品数据与玩法拆解', icon: Swords },
+    { id: AppView.PERSONALIZATION_AB, label: '个性化与AB测试', icon: Split },
   ];
 
   // Items to be grouped under "Product Monetization" (Moved Above Growth)
@@ -76,6 +77,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   // Items to be grouped under "Creative & Copy"
   const creativeNavItems = [
     { id: AppView.IMAGE_REPLICATION, label: '图片素材仿制', icon: RefreshCcw },
+    { id: AppView.VIDEO_ANALYZER, label: '视频拉片拆解', icon: Clapperboard },
+    { id: AppView.PLAYABLE_REPLICATION, label: '试玩广告仿制', icon: Gamepad },
     { id: AppView.CREATIVE, label: 'FACEBOOK图文广告创意', icon: ImageIcon },
     { id: AppView.COPY_GEN, label: 'FACEBOOK广告文案', icon: Languages },
     { id: AppView.LIVEOPS_GEN, label: 'GooglePlay LiveOps物料', icon: Calendar },

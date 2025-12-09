@@ -1,18 +1,21 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, Globe, Send, Link as LinkIcon, Copy, Check, MapPin, X, ChevronDown, FileText, Search, Maximize2, Activity } from 'lucide-react';
-import { GameDetails } from '../types';
+import { Loader2, Globe, Send, Link as LinkIcon, Copy, Check, MapPin, X, ChevronDown, FileText, Search, Maximize2, Activity, Cpu } from 'lucide-react';
+import { GameDetails, AiMetadata } from '../types';
 import { generateOmnichannelStrategy } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, LabelList } from 'recharts';
+import AiMetaDisplay from './AiMetaDisplay';
 
 const OmnichannelStrategy: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
   const [showChartModal, setShowChartModal] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
   
   // Custom states for this component
   const [gpUrl, setGpUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
@@ -40,6 +43,11 @@ const OmnichannelStrategy: React.FC = () => {
     "Traditional Chinese (繁体中文)",
     "Japanese (日语)",
     "Korean (韩语)",
+  ];
+
+  const modelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
   ];
 
   const tiers = [
@@ -167,9 +175,11 @@ const OmnichannelStrategy: React.FC = () => {
     }
     setLoading(true);
     setPlan(null);
+    setMeta(null);
     try {
-      const generatedPlan = await generateOmnichannelStrategy(details, gpUrl, iosUrl, language);
-      setPlan(generatedPlan);
+      const { data, meta } = await generateOmnichannelStrategy(details, gpUrl, iosUrl, language, selectedModel);
+      setPlan(data);
+      setMeta(meta);
     } catch (error) {
       console.error(error);
       alert("无法生成策略，请重试。");
@@ -398,19 +408,35 @@ const OmnichannelStrategy: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-               <Globe className="w-3 h-3" /> 输出语言
-            </label>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {languages.map(lang => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Globe className="w-3 h-3" /> 输出语言
+              </label>
+              <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              >
+                {languages.map(lang => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Cpu className="w-3 h-3" /> AI 模型
+              </label>
+              <select 
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              >
+                {modelOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -486,6 +512,7 @@ const OmnichannelStrategy: React.FC = () => {
             </div>
             <div className="prose prose-invert prose-indigo max-w-none overflow-y-auto pr-4 custom-scrollbar">
                <ReactMarkdown>{plan}</ReactMarkdown>
+               <AiMetaDisplay metadata={meta} />
             </div>
           </>
         ) : (

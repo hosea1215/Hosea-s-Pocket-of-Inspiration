@@ -15,7 +15,8 @@ const LiveOpsGenerator: React.FC = () => {
   const [language, setLanguage] = useState('English');
   const [includeText, setIncludeText] = useState(false);
   const [includeCharacters, setIncludeCharacters] = useState(true);
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash-image');
+  const [selectedImageModel, setSelectedImageModel] = useState('gemini-2.5-flash-image');
+  const [selectedLlmModel, setSelectedLlmModel] = useState('gemini-3-pro-preview');
   const [result, setResult] = useState<LiveOpsContent | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -60,10 +61,15 @@ const LiveOpsGenerator: React.FC = () => {
     "Wooden (木头风)"
   ];
 
-  const modelOptions = [
+  const imageModelOptions = [
     { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
     { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' },
     { value: 'imagen-3.0-generate-002', label: 'Imagen 3 (专业绘图)' }
+  ];
+
+  const llmModelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
   ];
 
   const themeTemplates: Record<string, string[]> = {
@@ -121,7 +127,7 @@ const LiveOpsGenerator: React.FC = () => {
     }
 
     // Check if API key is selected for the paid model (gemini-3-pro-image-preview or imagen)
-    if ((window as any).aistudio && (selectedModel === 'gemini-3-pro-image-preview' || selectedModel.includes('imagen'))) {
+    if ((window as any).aistudio && (selectedImageModel === 'gemini-3-pro-image-preview' || selectedImageModel.includes('imagen'))) {
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         if (!hasKey) {
             await (window as any).aistudio.openSelectKey();
@@ -133,22 +139,22 @@ const LiveOpsGenerator: React.FC = () => {
     setGeneratedImage(null);
     
     try {
-      const data = await generateLiveOpsContent(gameName, storeUrl, eventType, eventTheme, language, includeText, includeCharacters);
-      setResult(data);
+      const response = await generateLiveOpsContent(gameName, storeUrl, eventType, eventTheme, language, includeText, includeCharacters, selectedLlmModel);
+      setResult(response.data);
 
       // Trigger image generation if prompt exists
-      if (data.imagePrompt) {
+      if (response.data.imagePrompt) {
         setGeneratingImage(true);
         // Extract just the style name for the API if needed, or pass full string
         generateAdImage(
-            data.imagePrompt, 
+            response.data.imagePrompt, 
             '16:9', 
             artStyle, 
             '', 
             language, 
             includeText, 
             includeCharacters,
-            selectedModel
+            selectedImageModel
         )
           .then(({ imageUrl }) => {
             setGeneratedImage(imageUrl);
@@ -279,15 +285,44 @@ const LiveOpsGenerator: React.FC = () => {
              </div>
              <div>
                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Cpu className="w-3 h-3" /> 大语言模型
+               </label>
+               <select 
+                 value={selectedLlmModel}
+                 onChange={(e) => setSelectedLlmModel(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+               >
+                 {llmModelOptions.map(opt => (
+                   <option key={opt.value} value={opt.value}>{opt.label}</option>
+                 ))}
+               </select>
+             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                  <Cpu className="w-3 h-3" /> 生图模型
                </label>
                <select 
-                 value={selectedModel}
-                 onChange={(e) => setSelectedModel(e.target.value)}
+                 value={selectedImageModel}
+                 onChange={(e) => setSelectedImageModel(e.target.value)}
                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
                >
-                 {modelOptions.map(opt => (
+                 {imageModelOptions.map(opt => (
                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                 ))}
+               </select>
+             </div>
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">输出语言</label>
+               <select 
+                 value={language}
+                 onChange={(e) => setLanguage(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+               >
+                 {languages.map(lang => (
+                   <option key={lang} value={lang}>{lang}</option>
                  ))}
                </select>
              </div>
@@ -315,19 +350,6 @@ const LiveOpsGenerator: React.FC = () => {
                   <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
                 </label>
              </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">输出语言</label>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {languages.map(lang => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
-            </select>
           </div>
         </div>
 

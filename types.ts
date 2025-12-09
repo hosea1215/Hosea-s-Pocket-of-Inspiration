@@ -13,6 +13,8 @@ export enum AppView {
   MARKETING_CALENDAR = 'MARKETING_CALENDAR',
   CREATIVE = 'CREATIVE',
   IMAGE_REPLICATION = 'IMAGE_REPLICATION',
+  VIDEO_ANALYZER = 'VIDEO_ANALYZER',
+  PLAYABLE_REPLICATION = 'PLAYABLE_REPLICATION',
   ICON_GEN = 'ICON_GEN',
   COPY_GEN = 'COPY_GEN',
   ASMR_RESEARCH = 'ASMR_RESEARCH',
@@ -29,6 +31,7 @@ export enum AppView {
   NARRATIVE_DESIGN = 'NARRATIVE_DESIGN',
   LTV_CALCULATOR = 'LTV_CALCULATOR',
   COMPETITOR_ANALYSIS = 'COMPETITOR_ANALYSIS',
+  PERSONALIZATION_AB = 'PERSONALIZATION_AB',
   STORE_COMPARISON = 'STORE_COMPARISON',
   PUSH_STRATEGY = 'PUSH_STRATEGY',
   LIVEOPS_GEN = 'LIVEOPS_GEN',
@@ -53,6 +56,7 @@ export interface AiMetadata {
   model: string;
   sources?: { title: string; url: string }[];
   reasoning?: string;
+  prompt?: string;
 }
 
 export interface AiResponse<T> {
@@ -271,4 +275,19 @@ export interface MarketingCalendarData {
   historicalRoas: number;
   historicalCtr: number;
   pastCampaignInsight: string;
+}
+
+export interface StoryboardShot {
+  id: string;
+  shotNumber: number;
+  description: string;
+  audio: string;
+  visualPrompt: string;
+  generatedImageUrl?: string;
+  generatedVideoUrl?: string;
+}
+
+export interface VideoAnalysisResponse {
+  script: string;
+  storyboard: StoryboardShot[];
 }

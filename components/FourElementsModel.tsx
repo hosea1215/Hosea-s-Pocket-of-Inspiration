@@ -51,8 +51,8 @@ const FourElementsModel: React.FC = () => {
     setScores(null);
     try {
       const result = await generateFourElementsAnalysis(gameName, gameplay, storeUrl, genre, language);
-      setScores(result.scores);
-      setAnalysis(result.analysis);
+      setScores(result.data.scores);
+      setAnalysis(result.data.analysis);
     } catch (error) {
       console.error(error);
       alert("生成分析失败，请重试。");

@@ -1,11 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Calendar, Loader2, Copy, Check, FileText, Globe, MapPin, Search, BarChart2, ChevronDown, X, TrendingUp, History } from 'lucide-react';
+import { Calendar, Loader2, Copy, Check, FileText, Globe, MapPin, Search, BarChart2, ChevronDown, X, TrendingUp, History, Cpu } from 'lucide-react';
 import { generateMarketingCalendar } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell, Legend } from 'recharts';
-import { MarketingCalendarData } from '../types';
+import { MarketingCalendarData, AiMetadata } from '../types';
+import AiMetaDisplay from './AiMetaDisplay';
 
 const MarketingCalendar: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -19,9 +20,11 @@ const MarketingCalendar: React.FC = () => {
   const [quarter, setQuarter] = useState('Q1');
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
   const [showChart, setShowChart] = useState(true);
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
   
   const [calendarContent, setCalendarContent] = useState<string | null>(null);
   const [chartData, setChartData] = useState<MarketingCalendarData[]>([]);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
 
   const languages = [
@@ -30,6 +33,11 @@ const MarketingCalendar: React.FC = () => {
     "Traditional Chinese (繁体中文)",
     "Japanese (日语)",
     "Korean (韩语)",
+  ];
+
+  const modelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
   ];
 
   const quarters = ["Full Year (全年)", "Q1 (Jan-Mar)", "Q2 (Apr-Jun)", "Q3 (Jul-Sep)", "Q4 (Oct-Dec)"];
@@ -120,11 +128,13 @@ const MarketingCalendar: React.FC = () => {
     setLoading(true);
     setCalendarContent(null);
     setChartData([]);
+    setMeta(null);
     
     try {
       const countriesStr = selectedCountries.join(', ');
-      const result = await generateMarketingCalendar(countriesStr, year, quarter, language);
+      const result = await generateMarketingCalendar(countriesStr, year, quarter, language, selectedModel);
       setCalendarContent(result.data.markdown);
+      setMeta(result.meta);
       if (result.data.chartData && Array.isArray(result.data.chartData)) {
         setChartData(result.data.chartData);
       }
@@ -266,6 +276,21 @@ const MarketingCalendar: React.FC = () => {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Cpu className="w-3 h-3" /> AI 模型
+            </label>
+            <select 
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {modelOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Chart Toggle */}
           <div className="flex items-center gap-3 bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
             <div className={`p-2 rounded-lg ${showChart ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
@@ -394,6 +419,7 @@ const MarketingCalendar: React.FC = () => {
 
                <div className="prose prose-invert prose-indigo max-w-none">
                   <ReactMarkdown>{calendarContent}</ReactMarkdown>
+                  <AiMetaDisplay metadata={meta} />
                </div>
             </div>
           </>

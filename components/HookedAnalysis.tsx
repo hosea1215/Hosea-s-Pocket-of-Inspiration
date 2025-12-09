@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Magnet, Loader2, Copy, Check, Link as LinkIcon, Shuffle, Zap, FileText, BookOpen, Globe } from 'lucide-react';
+import { Magnet, Loader2, Copy, Check, Link as LinkIcon, Shuffle, Zap, FileText, BookOpen, Globe, Cpu } from 'lucide-react';
 import { generateHookedAnalysis, analyzeGameplayFromUrl } from '../services/geminiService';
 import { researchExplanations } from '../constants';
-import { AppView } from '../types';
+import { AppView, AiMetadata } from '../types';
 import { exportToGoogleDocs } from '../utils/exportUtils';
+import AiMetaDisplay from './AiMetaDisplay';
 
 const HookedAnalysis: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -15,8 +16,10 @@ const HookedAnalysis: React.FC = () => {
   const [gameplay, setGameplay] = useState('通过拖动不同形状的彩块填满行或列进行消除，类似俄罗斯方块。');
   const [targetAudience, setTargetAudience] = useState('35-60岁女性，碎片时间娱乐，寻求放松解压');
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
 
   const languages = [
     "Simplified Chinese (简体中文)",
@@ -30,6 +33,11 @@ const HookedAnalysis: React.FC = () => {
     "French (法语)"
   ];
 
+  const modelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
+  ];
+
   const handleGenerate = async () => {
     if (!gameName || !gameplay) {
         alert("请填写游戏名称和玩法描述");
@@ -37,9 +45,11 @@ const HookedAnalysis: React.FC = () => {
     }
     setLoading(true);
     setAnalysis(null);
+    setMeta(null);
     try {
-      const result = await generateHookedAnalysis(gameName, gameplay, storeUrl, targetAudience, language);
-      setAnalysis(result);
+      const result = await generateHookedAnalysis(gameName, gameplay, storeUrl, targetAudience, language, selectedModel);
+      setAnalysis(result.data);
+      setMeta(result.meta);
     } catch (error) {
       console.error(error);
       alert("分析失败，请重试。");
@@ -72,20 +82,6 @@ const HookedAnalysis: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    if (!analysis) return;
-    const blob = new Blob([analysis], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const safeName = gameName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    link.download = `hooked_analysis_${safeName}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   const handleExport = () => {
     if (!analysis) return;
     exportToGoogleDocs(analysis, `Hooked Model Analysis - ${gameName}`);
@@ -104,6 +100,7 @@ const HookedAnalysis: React.FC = () => {
         </div>
 
         <div className="space-y-5 flex-1 overflow-y-auto custom-scrollbar">
+          {/* Inputs... */}
           <div>
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏名称</label>
             <input 
@@ -134,7 +131,6 @@ const HookedAnalysis: React.FC = () => {
               type="text" 
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
-              placeholder="例如：18-24岁大学生，喜欢竞技..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
@@ -155,24 +151,39 @@ const HookedAnalysis: React.FC = () => {
               rows={6}
               value={gameplay}
               onChange={(e) => setGameplay(e.target.value)}
-              placeholder="详细描述游戏的操作方式、循环机制..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-               <Globe className="w-3 h-3" /> 输出语言
-            </label>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {languages.map(lang => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Globe className="w-3 h-3" /> 输出语言
+              </label>
+              <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              >
+                {languages.map(lang => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Cpu className="w-3 h-3" /> AI 模型
+              </label>
+              <select 
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              >
+                {modelOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
@@ -180,10 +191,10 @@ const HookedAnalysis: React.FC = () => {
                <Zap className="w-3 h-3" /> 模型简介
              </h4>
              <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
-               <li><strong className="text-slate-300">Trigger (触发):</strong> 外部刺激与内部情绪</li>
-               <li><strong className="text-slate-300">Action (行动):</strong> 动机与能力的结合</li>
-               <li><strong className="text-slate-300">Variable Reward (酬赏):</strong> 多变且不可预测的奖励</li>
-               <li><strong className="text-slate-300">Investment (投入):</strong> 用户的时间与资产积累</li>
+               <li><strong className="text-slate-300">Trigger:</strong> 触发</li>
+               <li><strong className="text-slate-300">Action:</strong> 行动</li>
+               <li><strong className="text-slate-300">Variable Reward:</strong> 多变酬赏</li>
+               <li><strong className="text-slate-300">Investment:</strong> 投入</li>
              </ul>
           </div>
         </div>
@@ -205,13 +216,6 @@ const HookedAnalysis: React.FC = () => {
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
               <h2 className="text-xl font-bold text-white">上瘾模型分析报告</h2>
               <div className="flex gap-2">
-                <button 
-                  onClick={handleDownload}
-                  className="bg-slate-700 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-                >
-                  <FileText className="w-4 h-4" />
-                  生成可视化文档
-                </button>
                 <button 
                   onClick={handleCopy}
                   className={`bg-slate-700 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${copied ? 'bg-green-600 hover:bg-green-700' : ''}`}
@@ -243,6 +247,7 @@ const HookedAnalysis: React.FC = () => {
 
             <div className="prose prose-invert prose-indigo max-w-none overflow-y-auto pr-4 custom-scrollbar">
                <ReactMarkdown>{analysis}</ReactMarkdown>
+               <AiMetaDisplay metadata={meta} />
             </div>
           </>
         ) : (

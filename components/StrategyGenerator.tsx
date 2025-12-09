@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, Zap, Send, Link as LinkIcon, Copy, Check, Search, FileText, Globe, MapPin, X, ChevronDown } from 'lucide-react';
+import { Loader2, Zap, Send, Link as LinkIcon, Copy, Check, Search, FileText, Globe, MapPin, X, ChevronDown, Cpu } from 'lucide-react';
 import { GameDetails, AiMetadata } from '../types';
 import { generateMarketingPlan, generateAsoAnalysis } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
@@ -18,6 +18,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
   const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
   
   // Country Selection State
   const [selectedCountries, setSelectedCountries] = useState<string[]>(['US', 'UK', 'CA']);
@@ -47,6 +48,11 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
     "Portuguese (葡萄牙语)",
     "German (德语)",
     "French (法语)"
+  ];
+
+  const modelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
   ];
 
   const tiers = [
@@ -153,7 +159,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
     setPlan(null);
     setMeta(null);
     try {
-      const { data, meta } = await generateMarketingPlan(details, platform, language);
+      const { data, meta } = await generateMarketingPlan(details, platform, language, selectedModel);
       setPlan(data);
       setMeta(meta);
     } catch (error) {
@@ -173,7 +179,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
     setPlan(null); 
     setMeta(null);
     try {
-      const { data, meta } = await generateAsoAnalysis(details, language);
+      const { data, meta } = await generateAsoAnalysis(details, language, selectedModel);
       setPlan(data);
       setMeta(meta);
     } catch (error) {
@@ -455,19 +461,35 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-               <Globe className="w-3 h-3" /> 输出语言
-            </label>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {languages.map(lang => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Globe className="w-3 h-3" /> 输出语言
+              </label>
+              <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              >
+                {languages.map(lang => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Cpu className="w-3 h-3" /> AI 模型
+              </label>
+              <select 
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              >
+                {modelOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

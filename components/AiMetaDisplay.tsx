@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Bot, Globe, ChevronDown, ChevronUp, BrainCircuit, ExternalLink } from 'lucide-react';
+import { Bot, Globe, ChevronDown, ChevronUp, BrainCircuit, ExternalLink, Terminal } from 'lucide-react';
 import { AiMetadata } from '../types';
 
 interface AiMetaDisplayProps {
@@ -9,6 +9,7 @@ interface AiMetaDisplayProps {
 
 const AiMetaDisplay: React.FC<AiMetaDisplayProps> = ({ metadata }) => {
   const [expandedReasoning, setExpandedReasoning] = useState(false);
+  const [expandedPrompt, setExpandedPrompt] = useState(false);
 
   if (!metadata) return null;
 
@@ -40,8 +41,24 @@ const AiMetaDisplay: React.FC<AiMetaDisplayProps> = ({ metadata }) => {
             }`}
           >
             <BrainCircuit className="w-3 h-3" />
-            <span>AI Thinking Process</span>
+            <span>AI Thinking</span>
             {expandedReasoning ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        )}
+
+        {/* Prompt Toggle */}
+        {metadata.prompt && (
+          <button 
+            onClick={() => setExpandedPrompt(!expandedPrompt)}
+            className={`flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded border transition-colors ${
+              expandedPrompt
+                ? 'bg-blue-900/30 text-blue-300 border-blue-500/20' 
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-300'
+            }`}
+          >
+            <Terminal className="w-3 h-3" />
+            <span>Prompt (提示词)</span>
+            {expandedPrompt ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
         )}
       </div>
@@ -54,6 +71,18 @@ const AiMetaDisplay: React.FC<AiMetaDisplayProps> = ({ metadata }) => {
           </h4>
           <p className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed font-mono">
             {metadata.reasoning}
+          </p>
+        </div>
+      )}
+
+      {/* Prompt Content */}
+      {expandedPrompt && metadata.prompt && (
+        <div className="mb-4 bg-slate-900/50 rounded-lg p-3 border border-blue-500/10">
+          <h4 className="text-[10px] font-bold text-blue-500/80 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Terminal className="w-3 h-3" /> Input Prompt
+          </h4>
+          <p className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed font-mono select-all">
+            {metadata.prompt}
           </p>
         </div>
       )}

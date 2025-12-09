@@ -35,6 +35,9 @@ import AdTechNews from './components/AdTechNews';
 import AiNews from './components/AiNews';
 import MarketingCalendar from './components/MarketingCalendar';
 import ImageReplicator from './components/ImageReplicator';
+import VideoAnalyzer from './components/VideoAnalyzer';
+import PlayableReplication from './components/PlayableReplication';
+import PersonalizationAbTesting from './components/PersonalizationAbTesting';
 import { AppView } from './types';
 import { Search, Megaphone, Zap, BarChart2, Smartphone, Music } from 'lucide-react';
 
@@ -69,6 +72,10 @@ const App: React.FC = () => {
         return <CreativeLab />;
       case AppView.IMAGE_REPLICATION:
         return <ImageReplicator />;
+      case AppView.VIDEO_ANALYZER:
+        return <VideoAnalyzer />;
+      case AppView.PLAYABLE_REPLICATION:
+        return <PlayableReplication />;
       case AppView.ICON_GEN:
         return <IconGenerator />;
       case AppView.COPY_GEN:
@@ -101,6 +108,8 @@ const App: React.FC = () => {
         return <LtvCalculator />;
       case AppView.COMPETITOR_ANALYSIS:
         return <CompetitorAnalysis />;
+      case AppView.PERSONALIZATION_AB:
+        return <PersonalizationAbTesting />;
       case AppView.STORE_COMPARISON:
         return <StoreComparison />;
       case AppView.PUSH_STRATEGY:
@@ -157,6 +166,8 @@ const App: React.FC = () => {
       case AppView.MARKETING_CALENDAR: return '主要国家营销日历';
       case AppView.CREATIVE: return 'FACEBOOK图文广告创意';
       case AppView.IMAGE_REPLICATION: return '图片素材仿制';
+      case AppView.VIDEO_ANALYZER: return '视频拉片拆解';
+      case AppView.PLAYABLE_REPLICATION: return '试玩广告仿制';
       case AppView.ICON_GEN: return '谷歌商店ICON生成';
       case AppView.COPY_GEN: return 'FACEBOOK广告文案';
       case AppView.ASMR_RESEARCH: return '游戏ASMR研究应用';
@@ -173,6 +184,7 @@ const App: React.FC = () => {
       case AppView.NARRATIVE_DESIGN: return '叙事设计理论 (Narrative)';
       case AppView.LTV_CALCULATOR: return '游戏LTV&回本估算器';
       case AppView.COMPETITOR_ANALYSIS: return '竞品数据与玩法拆解';
+      case AppView.PERSONALIZATION_AB: return '个性化与AB测试';
       case AppView.STORE_COMPARISON: return '游戏商店详情页对比';
       case AppView.PUSH_STRATEGY: return '游戏通知PUSH策略';
       case AppView.LIVEOPS_GEN: return 'GooglePlay LiveOps物料';

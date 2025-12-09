@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2, Languages, Copy, Check, Smile, Link as LinkIcon, Sparkles, Image as ImageIcon, Download, PenTool, LayoutTemplate, Maximize2, X } from 'lucide-react';
+import { Loader2, Languages, Copy, Check, Smile, Link as LinkIcon, Sparkles, Image as ImageIcon, Download, PenTool, LayoutTemplate, Maximize2, X, Cpu } from 'lucide-react';
 import { generateFacebookAdCopies, analyzeSellingPointsFromUrl, generateAdImage } from '../services/geminiService';
 import { CopyVariant } from '../types';
 
@@ -13,6 +13,8 @@ const CopyGenerator: React.FC = () => {
   const [targetLanguage, setTargetLanguage] = useState('English');
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [copyStyle, setCopyStyle] = useState('General (通用)');
+  const [selectedLlmModel, setSelectedLlmModel] = useState('gemini-3-pro-preview');
+  const [selectedImageModel, setSelectedImageModel] = useState('gemini-2.5-flash-image');
   const [results, setResults] = useState<CopyVariant[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -49,6 +51,17 @@ const CopyGenerator: React.FC = () => {
     "Short & Punchy (短促有力)"
   ];
 
+  const llmModelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
+  ];
+
+  const imageModelOptions = [
+    { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
+    { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' },
+    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 (专业绘图)' }
+  ];
+
   const handleGenerate = async () => {
     if (!productName || !description) return;
     
@@ -63,7 +76,8 @@ const CopyGenerator: React.FC = () => {
         targetLanguage,
         includeEmojis,
         storeUrl,
-        copyStyle
+        copyStyle,
+        selectedLlmModel
       );
       setResults(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -105,6 +119,14 @@ const CopyGenerator: React.FC = () => {
     setGeneratingImgId(id);
     const currentRatio = cardAspectRatios[id] || '1:1';
 
+    // Check if API key is selected for the paid model (gemini-3-pro-image-preview)
+    if ((window as any).aistudio && (selectedImageModel === 'gemini-3-pro-image-preview' || selectedImageModel.includes('imagen'))) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            await (window as any).aistudio.openSelectKey();
+        }
+    }
+
     try {
       // Construct a prompt that combines the specific copy with the general game description
       // using the store description as visual context
@@ -119,7 +141,8 @@ const CopyGenerator: React.FC = () => {
         description, // Pass description as visual details which comes from store analysis
         targetLanguage,
         false, // Include text
-        true   // Include characters
+        true,   // Include characters
+        selectedImageModel
       );
 
       setGeneratedImages(prev => ({
@@ -213,6 +236,37 @@ const CopyGenerator: React.FC = () => {
                 <option key={lang.value} value={lang.value}>{lang.label}</option>
               ))}
             </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Cpu className="w-3 h-3" /> 大语言模型
+               </label>
+               <select 
+                 value={selectedLlmModel}
+                 onChange={(e) => setSelectedLlmModel(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+               >
+                 {llmModelOptions.map(opt => (
+                   <option key={opt.value} value={opt.value}>{opt.label}</option>
+                 ))}
+               </select>
+             </div>
+             <div>
+               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                 <Cpu className="w-3 h-3" /> 生图模型
+               </label>
+               <select 
+                 value={selectedImageModel}
+                 onChange={(e) => setSelectedImageModel(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+               >
+                 {imageModelOptions.map(opt => (
+                   <option key={opt.value} value={opt.value}>{opt.label}</option>
+                 ))}
+               </select>
+             </div>
           </div>
 
           <div>

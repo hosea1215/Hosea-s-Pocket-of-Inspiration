@@ -19,7 +19,8 @@ const CreativeLab: React.FC = () => {
   const [includeText, setIncludeText] = useState(false);
   const [includeCharacters, setIncludeCharacters] = useState(true);
   const [includeButton, setIncludeButton] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash-image');
+  const [selectedImageModel, setSelectedImageModel] = useState('gemini-2.5-flash-image');
+  const [selectedLlmModel, setSelectedLlmModel] = useState('gemini-3-pro-preview');
   const [generatedCreatives, setGeneratedCreatives] = useState<AdCreative[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
@@ -37,10 +38,15 @@ const CreativeLab: React.FC = () => {
     "Search (搜索)"
   ];
 
-  const modelOptions = [
+  const imageModelOptions = [
     { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
     { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' },
     { value: 'imagen-3.0-generate-002', label: 'Imagen 3 (专业绘图)' }
+  ];
+
+  const llmModelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
   ];
 
   const styleOptions = [
@@ -116,7 +122,7 @@ const CreativeLab: React.FC = () => {
         selectedLanguage,
         includeText || (includeButton && !!selectedCta),
         includeCharacters,
-        selectedModel
+        selectedImageModel
       );
       
       // Use clean CTA for copy generation
@@ -130,7 +136,7 @@ const CreativeLab: React.FC = () => {
         promotionGoal: 'General Promotion',
         promotionPurpose: 'App Promotion',
         storeUrl: storeUrl // Pass store URL
-      }, concept, ctaText, selectedLanguage);
+      }, concept, ctaText, selectedLanguage, selectedLlmModel);
 
       // Update stage for image generation (usually takes longest)
       setLoadingStage('正在生成营销视觉图像...');
@@ -223,8 +229,7 @@ const CreativeLab: React.FC = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-           <div>
+        <div>
              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                <Globe className="w-3 h-3" /> 输出语言
              </label>
@@ -237,17 +242,33 @@ const CreativeLab: React.FC = () => {
                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                ))}
              </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+           <div>
+             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Cpu className="w-3 h-3" /> 大语言模型
+             </label>
+             <select 
+               value={selectedLlmModel}
+               onChange={(e) => setSelectedLlmModel(e.target.value)}
+               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+             >
+               {llmModelOptions.map(opt => (
+                 <option key={opt.value} value={opt.value}>{opt.label}</option>
+               ))}
+             </select>
            </div>
            <div>
              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                <Cpu className="w-3 h-3" /> 生图模型
              </label>
              <select 
-               value={selectedModel}
-               onChange={(e) => setSelectedModel(e.target.value)}
-               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+               value={selectedImageModel}
+               onChange={(e) => setSelectedImageModel(e.target.value)}
+               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
              >
-               {modelOptions.map(opt => (
+               {imageModelOptions.map(opt => (
                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                ))}
              </select>

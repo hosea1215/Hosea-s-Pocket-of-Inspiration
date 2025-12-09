@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ArrowRightLeft, Loader2, Link as LinkIcon, Trophy, Check, Copy, Globe, FileText } from 'lucide-react';
+import { ArrowRightLeft, Loader2, Link as LinkIcon, Trophy, Check, Copy, Globe, FileText, Cpu } from 'lucide-react';
 import { compareStorePages } from '../services/geminiService';
-import { StoreComparisonResponse } from '../types';
+import { StoreComparisonResponse, AiMetadata } from '../types';
+import AiMetaDisplay from './AiMetaDisplay';
 
 const StoreComparison: React.FC = () => {
   const [url1, setUrl1] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
@@ -11,7 +12,9 @@ const StoreComparison: React.FC = () => {
   const [language, setLanguage] = useState('English');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<StoreComparisonResponse | null>(null);
+  const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
 
   const languages = [
     { value: 'English', label: 'English (英文)' },
@@ -23,6 +26,11 @@ const StoreComparison: React.FC = () => {
     { value: 'Portuguese', label: 'Portuguese (葡萄牙语)' },
   ];
 
+  const modelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
+  ];
+
   const handleCompare = async () => {
     if (!url1 || !url2) {
       alert("请填写两个游戏商店链接");
@@ -30,9 +38,11 @@ const StoreComparison: React.FC = () => {
     }
     setLoading(true);
     setResult(null);
+    setMeta(null);
     try {
-      const data = await compareStorePages(url1, url2, language);
+      const { data, meta } = await compareStorePages(url1, url2, language, selectedModel);
       setResult(data);
+      setMeta(meta);
     } catch (error) {
       console.error(error);
       alert("对比失败，请重试。");
@@ -103,19 +113,35 @@ const StoreComparison: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-               <Globe className="w-3 h-3" /> 输出语言
-            </label>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {languages.map(lang => (
-                <option key={lang.value} value={lang.value}>{lang.label}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Globe className="w-3 h-3" /> 输出语言
+                </label>
+                <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                {languages.map(lang => (
+                    <option key={lang.value} value={lang.value}>{lang.label}</option>
+                ))}
+                </select>
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Cpu className="w-3 h-3" /> AI 模型
+                </label>
+                <select 
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                {modelOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+                </select>
+            </div>
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
@@ -221,6 +247,8 @@ const StoreComparison: React.FC = () => {
                     <ReactMarkdown>{result.detailedAnalysis}</ReactMarkdown>
                  </div>
               </div>
+
+              <AiMetaDisplay metadata={meta} />
             </div>
           </>
         ) : (

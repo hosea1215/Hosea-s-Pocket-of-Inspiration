@@ -13,7 +13,8 @@ const ImageReplicator: React.FC = () => {
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [selectedStyle, setSelectedStyle] = useState('3D Render');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash-image');
+  const [selectedImageModel, setSelectedImageModel] = useState('gemini-2.5-flash-image');
+  const [selectedVisionModel, setSelectedVisionModel] = useState('gemini-3-pro-preview');
   const [includeText, setIncludeText] = useState(false);
   const [includeCharacters, setIncludeCharacters] = useState(true);
   const [includeButton, setIncludeButton] = useState(false);
@@ -26,10 +27,15 @@ const ImageReplicator: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const modelOptions = [
+  const imageModelOptions = [
     { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
     { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' },
     { value: 'imagen-3.0-generate-002', label: 'Imagen 3 (专业绘图)' }
+  ];
+
+  const visionModelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (详细)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
   ];
 
   const styleOptions = [
@@ -110,7 +116,7 @@ const ImageReplicator: React.FC = () => {
       reader.onload = (e) => {
           setSourceImage(e.target?.result as string);
           setAnalyzedPrompt(''); // Clear previous analysis
-      };
+              };
       reader.readAsDataURL(file);
     }
   };
@@ -121,7 +127,7 @@ const ImageReplicator: React.FC = () => {
     try {
         const base64Data = sourceImage.split(',')[1];
         const mimeType = sourceImage.substring(sourceImage.indexOf(':') + 1, sourceImage.indexOf(';'));
-        const description = await describeImageForRecreation(base64Data, mimeType);
+        const description = await describeImageForRecreation(base64Data, mimeType, selectedVisionModel);
         setAnalyzedPrompt(description);
     } catch (e) {
         console.error(e);
@@ -145,7 +151,7 @@ const ImageReplicator: React.FC = () => {
     }
 
     // Check API Key for paid models
-    if ((window as any).aistudio && (selectedModel === 'gemini-3-pro-image-preview' || selectedModel.includes('imagen'))) {
+    if ((window as any).aistudio && (selectedImageModel === 'gemini-3-pro-image-preview' || selectedImageModel.includes('imagen'))) {
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         if (!hasKey) {
             await (window as any).aistudio.openSelectKey();
@@ -165,7 +171,7 @@ const ImageReplicator: React.FC = () => {
             const base64Data = sourceImage.split(',')[1];
             const mimeType = sourceImage.substring(sourceImage.indexOf(':') + 1, sourceImage.indexOf(';'));
             
-            description = await describeImageForRecreation(base64Data, mimeType);
+            description = await describeImageForRecreation(base64Data, mimeType, selectedVisionModel);
             setAnalyzedPrompt(description);
         }
         
@@ -191,7 +197,7 @@ const ImageReplicator: React.FC = () => {
             selectedLanguage,
             includeText || (includeButton && !!cta),
             includeCharacters,
-            selectedModel
+            selectedImageModel
         );
 
         setGeneratedImage(result.imageUrl);
@@ -313,28 +319,28 @@ const ImageReplicator: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Cpu className="w-3 h-3" /> 生图模型
+                        <Cpu className="w-3 h-3" /> 视觉分析模型
                     </label>
                     <select 
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
+                        value={selectedVisionModel}
+                        onChange={(e) => setSelectedVisionModel(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
                     >
-                        {modelOptions.map(opt => (
+                        {visionModelOptions.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Globe className="w-3 h-3" /> 输出语言
+                        <Cpu className="w-3 h-3" /> 生图模型
                     </label>
                     <select 
-                        value={selectedLanguage}
-                        onChange={(e) => setSelectedLanguage(e.target.value)}
+                        value={selectedImageModel}
+                        onChange={(e) => setSelectedImageModel(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
                     >
-                        {languageOptions.map(opt => (
+                        {imageModelOptions.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
