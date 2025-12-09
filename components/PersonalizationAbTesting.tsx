@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Split, Loader2, Copy, Check, FileText, Globe, Cpu, Users, Target, Shuffle, Search } from 'lucide-react';
+import { Split, Loader2, Copy, Check, FileText, Globe, Cpu, Users, Target, Shuffle, Search, Link as LinkIcon, DollarSign } from 'lucide-react';
 import { generatePersonalizationStrategy } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
 import { AiMetadata } from '../types';
@@ -10,7 +10,9 @@ import AiMetaDisplay from './AiMetaDisplay';
 const PersonalizationAbTesting: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [gameName, setGameName] = useState('COLOR BLOCK');
+  const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
   const [genre, setGenre] = useState('Puzzle (益智)');
+  const [monetizationModel, setMonetizationModel] = useState('Hybrid Monetization (混合变现)');
   const [segments, setSegments] = useState('New Users, Whales, At-Risk Churn (新用户, 大R, 流失风险用户)');
   const [focusArea, setFocusArea] = useState('Onboarding Flow & Store Offers (新手引导与商店礼包)');
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
@@ -32,21 +34,30 @@ const PersonalizationAbTesting: React.FC = () => {
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
   ];
 
+  const monetizationOptions = [
+    "Hybrid Monetization (混合变现)",
+    "Ad Monetization (广告变现)",
+    "IAP Monetization (内购变现)"
+  ];
+
   const segmentPresets = [
     'New Users, Whales, At-Risk Churn (新用户, 大R, 流失风险用户)',
     'Casual Players, Hardcore Grinders, Socializers (休闲玩家, 硬核肝帝, 社交型玩家)',
     'Free-to-Play, Low Spenders, High Spenders (零氪, 微氪, 重氪)',
     'Early Game, Mid Game, End Game Players (前期, 中期, 后期玩家)',
-    'High Retention/Low LTV vs Low Retention/High LTV (高留存低价值 vs 低留存高价值)'
+    'High Retention/Low LTV vs Low Retention/High LTV (高留存低价值 vs 低留存高价值)',
+    'Low-End Device Users vs High-End Device Users (低端机 vs 高端机用户)'
   ];
 
   const focusAreaPresets = [
     'Onboarding Flow & Store Offers (新手引导与商店礼包)',
     'Difficulty Tuning & Level Progression (难度调整与关卡进程)',
+    'Ad Waterfall & Bidding Strategy (广告瀑布流与竞价策略)',
+    'Ad Placement Design & Frequency (广告位设计与频次)',
+    'IAP Pricing & SKU Layout (计费组合设计与定价)',
+    'Device Performance Optimization (设备机型性能适配)',
     'Push Notification Timing & Content (推送时机与内容)',
-    'Ad Frequency & Rewarded Video Placements (广告频次与激励视频点位)',
-    'LiveOps Event Participation & Rewards (活动参与度与奖励)',
-    'Main Menu UI Layout & Feature Unlocking (主界面布局与功能解锁)'
+    'LiveOps Event Participation & Rewards (活动参与度与奖励)'
   ];
 
   const handleRandomSegments = () => {
@@ -68,7 +79,16 @@ const PersonalizationAbTesting: React.FC = () => {
     setStrategy(null);
     setMeta(null);
     try {
-      const { data, meta } = await generatePersonalizationStrategy(gameName, genre, segments, focusArea, language, selectedModel);
+      const { data, meta } = await generatePersonalizationStrategy(
+          gameName, 
+          genre, 
+          storeUrl, 
+          monetizationModel, 
+          segments, 
+          focusArea, 
+          language, 
+          selectedModel
+      );
       setStrategy(data);
       setMeta(meta);
     } catch (error) {
@@ -115,6 +135,20 @@ const PersonalizationAbTesting: React.FC = () => {
           </div>
 
           <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏商店链接</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                value={storeUrl}
+                onChange={(e) => setStoreUrl(e.target.value)}
+                placeholder="https://play.google.com/store/..."
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+              />
+              <LinkIcon className="absolute left-3 top-3.5 w-4 h-4 text-slate-500" />
+            </div>
+          </div>
+
+          <div>
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">游戏类型</label>
             <input 
               type="text" 
@@ -122,6 +156,21 @@ const PersonalizationAbTesting: React.FC = () => {
               onChange={(e) => setGenre(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <DollarSign className="w-3 h-3" /> 变现模式
+            </label>
+            <select 
+              value={monetizationModel}
+              onChange={(e) => setMonetizationModel(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {monetizationOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -142,7 +191,7 @@ const PersonalizationAbTesting: React.FC = () => {
               rows={3}
               value={segments}
               onChange={(e) => setSegments(e.target.value)}
-              placeholder="例如：新手用户, 大R玩家, 回流用户..."
+              placeholder="例如：新手用户, 大R玩家, 回流用户, 低端机型用户..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
           </div>
@@ -165,7 +214,7 @@ const PersonalizationAbTesting: React.FC = () => {
               rows={3}
               value={focusArea}
               onChange={(e) => setFocusArea(e.target.value)}
-              placeholder="例如：提升新手留存, 优化商店转化率..."
+              placeholder="例如：广告瀑布流优化, 计费点定价测试, 提升低端机流畅度..."
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
           </div>
@@ -206,9 +255,10 @@ const PersonalizationAbTesting: React.FC = () => {
                <Search className="w-3 h-3" /> 策略维度
              </h4>
              <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
-               <li><strong className="text-slate-300">Segmentation:</strong> 行为、人口统计、心理特征分层。</li>
-               <li><strong className="text-slate-300">Personalization:</strong> 动态难度、个性化礼包、内容推荐。</li>
-               <li><strong className="text-slate-300">Experimentation:</strong> 实验假设、变量设计、成功指标 (Metrics)。</li>
+               <li><strong className="text-slate-300">用户与设备:</strong> 行为特征、人口属性、设备机型性能 (Device Performance)。</li>
+               <li><strong className="text-slate-300">变现调优:</strong> 广告位设计、广告瀑布流 (Waterfall)、计费组合设计定价。</li>
+               <li><strong className="text-slate-300">个性化体验:</strong> 动态难度调节、千人千面礼包、内容推荐、通知PUSH。</li>
+               <li><strong className="text-slate-300">实验设计:</strong> 假设构建、变量控制、核心指标 (Metrics) 验证。</li>
              </ul>
           </div>
         </div>

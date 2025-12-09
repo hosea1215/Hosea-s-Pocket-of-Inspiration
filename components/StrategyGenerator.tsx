@@ -212,6 +212,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
 
   const isOEM = platform === 'OEM (Pre-install)';
   const isWeb2App = platform === 'Web2App';
+  const isGeoLift = platform === 'Geo-Lift Experiment';
 
   const strategyDimensions: Record<string, { label: string; value: string }[]> = {
     "OEM (Pre-install)": [
@@ -229,6 +230,12 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
       { label: "归因链路", value: "Web-to-App Attribution, SKAdNetwork, Probabilistic" },
       { label: "漏斗优化", value: "Click -> LP View -> Store View -> Install -> Event" },
       { label: "合规风险", value: "Cloaking, Platform Policy (Google/FB/Apple)" }
+    ],
+    "Geo-Lift Experiment": [
+      { label: "实验设计", value: "Test vs Control Markets Selection" },
+      { label: "核心指标", value: "Incremental ROAS (iROAS), Lift %" },
+      { label: "周期规划", value: "Cooldown (2w) + Test (4-6w) + Cooldown" },
+      { label: "预算分配", value: "Holdout groups setup & Budget scaling" }
     ],
     "Facebook": [
       { label: "广告架构", value: "AAA vs Manual Campaigns" },
@@ -276,7 +283,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Zap className="w-5 h-5 text-yellow-400" />
-            {platform} 广告策略生成
+            {platform} 策略生成
           </h2>
           <p className="text-sm text-slate-400 mt-1">提供您的游戏信息以生成定制的 {platform} 用户获取策略。</p>
         </div>
@@ -500,10 +507,10 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-900/50"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            {loading ? '分析中...' : `生成 ${platform} 广告策略`}
+            {loading ? '分析中...' : `生成 ${platform} 策略`}
           </button>
           
-          { !isOEM && !isWeb2App && (
+          { !isOEM && !isWeb2App && !isGeoLift && (
             <button 
               onClick={handleAsoAnalysis} 
               disabled={loading || asoLoading}
@@ -564,7 +571,7 @@ const StrategyGenerator: React.FC<StrategyGeneratorProps> = ({ platform = "Faceb
                <Zap className="w-10 h-10 text-slate-600" />
              </div>
              <p className="text-lg font-medium">准备规划</p>
-             <p className="text-sm max-w-xs text-center mt-2">填写左侧详情，点击“生成 {platform} 广告策略”{ !isOEM && !isWeb2App ? '或“ASO 关键词分析”' : ''}。</p>
+             <p className="text-sm max-w-xs text-center mt-2">填写左侧详情，点击“生成 {platform} 策略”{ !isOEM && !isWeb2App && !isGeoLift ? '或“ASO 关键词分析”' : ''}。</p>
           </div>
         )}
       </div>

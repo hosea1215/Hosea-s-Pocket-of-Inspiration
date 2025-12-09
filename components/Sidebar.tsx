@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -36,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: AppView.LTV_CALCULATOR, label: '游戏LTV&回本估算器', icon: Calculator },
     { id: AppView.COMPETITOR_ANALYSIS, label: '竞品数据与玩法拆解', icon: Swords },
     { id: AppView.PERSONALIZATION_AB, label: '个性化与AB测试', icon: Split },
+    { id: AppView.GAME_K_LINE, label: '游戏买量K线图', icon: CandlestickChart },
   ];
 
   // Items to be grouped under "Product Monetization" (Moved Above Growth)
@@ -57,6 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: AppView.PRE_INSTALL_STRATEGY, label: '预装渠道广告策略', icon: Smartphone },
     { id: AppView.CPE_GEN, label: '买量事件生成器', icon: Trophy },
     { id: AppView.WEB2APP_STRATEGY, label: 'WEB2APP策略', icon: Monitor },
+    { id: AppView.GEO_LIFT_STRATEGY, label: 'Geo-Lift 实验策略', icon: Map },
     { id: AppView.MARKETING_CALENDAR, label: '主要国家营销日历', icon: Calendar },
   ];
 

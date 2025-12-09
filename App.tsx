@@ -38,6 +38,7 @@ import ImageReplicator from './components/ImageReplicator';
 import VideoAnalyzer from './components/VideoAnalyzer';
 import PlayableReplication from './components/PlayableReplication';
 import PersonalizationAbTesting from './components/PersonalizationAbTesting';
+import GameKLineChart from './components/GameKLineChart';
 import { AppView } from './types';
 import { Search, Megaphone, Zap, BarChart2, Smartphone, Music } from 'lucide-react';
 
@@ -60,6 +61,8 @@ const App: React.FC = () => {
         return <StrategyGenerator platform="OEM (Pre-install)" />;
       case AppView.WEB2APP_STRATEGY:
         return <StrategyGenerator platform="Web2App" />;
+      case AppView.GEO_LIFT_STRATEGY:
+        return <StrategyGenerator platform="Geo-Lift Experiment" />;
       case AppView.OMNICHANNEL_STRATEGY:
         return <OmnichannelStrategy />;
       case AppView.ASO_KEYWORDS:
@@ -110,6 +113,8 @@ const App: React.FC = () => {
         return <CompetitorAnalysis />;
       case AppView.PERSONALIZATION_AB:
         return <PersonalizationAbTesting />;
+      case AppView.GAME_K_LINE:
+        return <GameKLineChart />;
       case AppView.STORE_COMPARISON:
         return <StoreComparison />;
       case AppView.PUSH_STRATEGY:
@@ -160,6 +165,7 @@ const App: React.FC = () => {
       case AppView.APPLOVIN_STRATEGY: return 'APPLOVIN广告策略';
       case AppView.PRE_INSTALL_STRATEGY: return '预装渠道广告策略';
       case AppView.WEB2APP_STRATEGY: return 'WEB2APP策略';
+      case AppView.GEO_LIFT_STRATEGY: return 'Geo-Lift 实验策略';
       case AppView.OMNICHANNEL_STRATEGY: return '全渠道发行策略';
       case AppView.ASO_KEYWORDS: return 'ASO 关键词分析';
       case AppView.CPE_GEN: return '买量事件生成器';
@@ -185,6 +191,7 @@ const App: React.FC = () => {
       case AppView.LTV_CALCULATOR: return '游戏LTV&回本估算器';
       case AppView.COMPETITOR_ANALYSIS: return '竞品数据与玩法拆解';
       case AppView.PERSONALIZATION_AB: return '个性化与AB测试';
+      case AppView.GAME_K_LINE: return '游戏买量K线图';
       case AppView.STORE_COMPARISON: return '游戏商店详情页对比';
       case AppView.PUSH_STRATEGY: return '游戏通知PUSH策略';
       case AppView.LIVEOPS_GEN: return 'GooglePlay LiveOps物料';
