@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart, ClipboardCheck } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -28,15 +28,21 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const [newsExpanded, setNewsExpanded] = useState(false);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [creativeExpanded, setCreativeExpanded] = useState(false);
-  const [experienceExpanded, setExperienceExpanded] = useState(true); // Default open for better visibility
+  const [experienceExpanded, setExperienceExpanded] = useState(true); 
+  const [qualityExpanded, setQualityExpanded] = useState(true);
   const [showExplanation, setShowExplanation] = useState<string | null>(null);
 
   // Items to be shown in the main list
   const mainNavItems = [
     { id: AppView.LTV_CALCULATOR, label: '游戏LTV&回本估算器', icon: Calculator },
+    { id: AppView.GAME_K_LINE, label: '游戏买量K线图', icon: CandlestickChart },
     { id: AppView.COMPETITOR_ANALYSIS, label: '竞品数据与玩法拆解', icon: Swords },
     { id: AppView.PERSONALIZATION_AB, label: '个性化与AB测试', icon: Split },
-    { id: AppView.GAME_K_LINE, label: '游戏买量K线图', icon: CandlestickChart },
+  ];
+
+  // Quality Assurance Items
+  const qualityNavItems = [
+    { id: AppView.GAME_QUALITY_CHECKLIST, label: '游戏质量自查表', icon: ClipboardCheck },
   ];
 
   // Items to be grouped under "Product Monetization" (Moved Above Growth)
@@ -136,6 +142,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     if (isExperienceView) {
       setExperienceExpanded(true);
     }
+    const isQualityView = qualityNavItems.some(item => item.id === currentView);
+    if (isQualityView) {
+      setQualityExpanded(true);
+    }
   }, [currentView]);
 
   const handleGrowthClick = () => {
@@ -189,6 +199,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
       setExperienceExpanded(true);
     } else {
       setExperienceExpanded(!experienceExpanded);
+    }
+  };
+
+  const handleQualityClick = () => {
+    if (collapsed) {
+      setCollapsed(false);
+      setQualityExpanded(true);
+    } else {
+      setQualityExpanded(!qualityExpanded);
     }
   };
 
@@ -274,6 +293,28 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
         <nav className="flex-1 p-3 space-y-2 overflow-y-auto custom-scrollbar overflow-x-hidden">
           {/* Main Items */}
           {mainNavItems.map(item => renderNavItem(item))}
+
+          {/* Quality Group Separator/Toggle */}
+          <div className="pt-2 mt-2 border-t border-slate-800/50">
+            <button
+              onClick={handleQualityClick}
+              title={collapsed ? "产品质量验收" : ""}
+              className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-lg transition-all duration-200 group text-slate-400 hover:bg-slate-800 hover:text-slate-200`}
+            >
+              <ClipboardCheck className={`w-5 h-5 flex-shrink-0 text-slate-500 group-hover:text-slate-300 ${qualityExpanded && !collapsed ? 'text-indigo-400' : ''}`} />
+              {!collapsed && (
+                <>
+                  <span className="font-medium text-left flex-1 whitespace-nowrap text-sm">产品质量验收</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${qualityExpanded ? 'rotate-180' : ''}`} />
+                </>
+              )}
+            </button>
+
+            {/* Quality Collapsible Content */}
+            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${qualityExpanded || (collapsed && false) ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              {qualityNavItems.map(item => renderNavItem(item, true))}
+            </div>
+          </div>
 
           {/* Experience Group Separator/Toggle */}
           <div className="pt-2 mt-2 border-t border-slate-800/50">

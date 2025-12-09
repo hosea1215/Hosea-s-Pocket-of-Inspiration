@@ -1,3 +1,4 @@
+// ... existing imports
 import { GoogleGenAI, Schema, Type } from "@google/genai";
 import { 
   AiResponse, 
@@ -288,8 +289,8 @@ export const analyzeGameEconomics = async (metrics: any, countries: string) => {
     return result.data;
 };
 
-export const analyzeCompetitor = async (gameName: string, storeUrl: string) => {
-    const prompt = `Analyze competitor "${gameName}" from ${storeUrl}. Provide report, metrics estimate, audience persona, and market performance. Return JSON.`;
+export const analyzeCompetitor = async (gameName: string, storeUrl: string, language: string, modelName: string) => {
+    const prompt = `Analyze competitor "${gameName}" from ${storeUrl}. Provide report, metrics estimate, audience persona, and market performance. Language: ${language}. Return JSON.`;
     const schema: Schema = {
         type: Type.OBJECT,
         properties: {
@@ -304,7 +305,7 @@ export const analyzeCompetitor = async (gameName: string, storeUrl: string) => {
             }}
         }
     };
-    return generateContentWithMeta<{ report: CompetitorReport, metrics: CompetitorMetrics, audience: TargetAudience, market: MarketPerformance }>('gemini-3-pro-preview', prompt, schema);
+    return generateContentWithMeta<{ report: CompetitorReport, metrics: CompetitorMetrics, audience: TargetAudience, market: MarketPerformance }>(modelName, prompt, schema);
 };
 
 export const extractGameNameFromUrl = async (url: string) => {

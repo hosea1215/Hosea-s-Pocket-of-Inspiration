@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Swords, Loader2, Copy, Check, Link as LinkIcon, Search, RefreshCw, BarChart2, Globe, Clock, Users, Percent, Target, Heart, Briefcase, Wallet, Gamepad2, Layers, Repeat, Zap, Bell, Volume2, Store, Palette, MessageCircle, Share2, Code, Flag, AlertTriangle, User, Calendar, TrendingUp, Smartphone, MessageSquare, FileText } from 'lucide-react';
+import { Swords, Loader2, Copy, Check, Link as LinkIcon, Search, RefreshCw, BarChart2, Globe, Clock, Users, Percent, Target, Heart, Briefcase, Wallet, Gamepad2, Layers, Repeat, Zap, Bell, Volume2, Store, Palette, MessageCircle, Share2, Code, Flag, AlertTriangle, User, Calendar, TrendingUp, Smartphone, MessageSquare, FileText, Cpu } from 'lucide-react';
 import { analyzeCompetitor, extractGameNameFromUrl } from '../services/geminiService';
 import { CompetitorMetrics, TargetAudience, CompetitorReport, MarketPerformance, AiMetadata } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -13,12 +13,31 @@ const CompetitorAnalysis: React.FC = () => {
   const [extractingName, setExtractingName] = useState(false);
   const [gameName, setGameName] = useState('COLOR BLOCK');
   const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
+  const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
   const [report, setReport] = useState<CompetitorReport | null>(null);
   const [metrics, setMetrics] = useState<CompetitorMetrics | null>(null);
   const [audience, setAudience] = useState<TargetAudience | null>(null);
   const [market, setMarket] = useState<MarketPerformance | null>(null);
   const [meta, setMeta] = useState<AiMetadata | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const modelOptions = [
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (强推理)' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (快速)' },
+  ];
+
+  const languages = [
+    "Simplified Chinese (简体中文)",
+    "English (英文)",
+    "Traditional Chinese (繁体中文)",
+    "Japanese (日语)",
+    "Korean (韩语)",
+    "Spanish (西班牙语)",
+    "Portuguese (葡萄牙语)",
+    "German (德语)",
+    "French (法语)"
+  ];
 
   const handleAnalyze = async () => {
     if (!gameName || !storeUrl) {
@@ -32,7 +51,7 @@ const CompetitorAnalysis: React.FC = () => {
     setMarket(null);
     setMeta(null);
     try {
-      const { data, meta } = await analyzeCompetitor(gameName, storeUrl);
+      const { data, meta } = await analyzeCompetitor(gameName, storeUrl, language, selectedModel);
       setReport(data.report);
       setMetrics(data.metrics);
       setAudience(data.audience);
@@ -211,6 +230,36 @@ const CompetitorAnalysis: React.FC = () => {
               onChange={(e) => setGameName(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+               <Globe className="w-3 h-3" /> 输出语言
+            </label>
+            <select 
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {languages.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Cpu className="w-3 h-3" /> AI 模型
+            </label>
+            <select 
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+                {modelOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </select>
           </div>
 
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
