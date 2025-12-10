@@ -1,7 +1,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Image as ImageIcon, Loader2, Sparkles, Upload, Maximize2, Download, Copy, Check, Type, User, Palette, Globe, RefreshCcw, Cpu, X, MousePointerClick, Wand2 } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Sparkles, Upload, Maximize2, Download, Copy, Check, Type, User, Palette, Globe, RefreshCcw, Cpu, X, MousePointerClick, Wand2, Trash2, Layers } from 'lucide-react';
 import { generateAdImage, describeImageForRecreation } from '../services/geminiService';
+
+interface GeneratedResult {
+  id: string;
+  imageUrl: string;
+  prompt: string;
+  ratio: string;
+  timestamp: number;
+}
 
 const ImageReplicator: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -10,7 +18,10 @@ const ImageReplicator: React.FC = () => {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [analyzedPrompt, setAnalyzedPrompt] = useState('');
   const [additionalPrompt, setAdditionalPrompt] = useState('');
-  const [aspectRatio, setAspectRatio] = useState('1:1');
+  
+  // Changed to array for multi-select
+  const [selectedAspectRatios, setSelectedAspectRatios] = useState<string[]>(['1:1']);
+  
   const [selectedStyle, setSelectedStyle] = useState('3D Render');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [selectedImageModel, setSelectedImageModel] = useState('gemini-2.5-flash-image');
@@ -19,10 +30,12 @@ const ImageReplicator: React.FC = () => {
   const [includeCharacters, setIncludeCharacters] = useState(true);
   const [includeButton, setIncludeButton] = useState(false);
   const [cta, setCta] = useState('Download Now (立即下载)');
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  
+  // Changed to array for history/batch results
+  const [generatedResults, setGeneratedResults] = useState<GeneratedResult[]>([]);
+  
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [copiedAnalyzed, setCopiedAnalyzed] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +76,7 @@ const ImageReplicator: React.FC = () => {
     { value: '1:1', label: '1:1 (方形)' },
     { value: '9:16', label: '9:16 (竖屏)' },
     { value: '16:9', label: '16:9 (横版)' },
-    { value: '4:5', label: '4:5 (社交媒体)' }
+    { value: '4:5', label: '4:5 (社媒)' }
   ];
 
   const languageOptions = [
@@ -121,6 +134,14 @@ const ImageReplicator: React.FC = () => {
     }
   };
 
+  const toggleAspectRatio = (ratio: string) => {
+    setSelectedAspectRatios(prev => 
+      prev.includes(ratio) 
+        ? prev.filter(r => r !== ratio) 
+        : [...prev, ratio]
+    );
+  };
+
   const handleAnalyzePrompt = async () => {
     if (!sourceImage) return;
     setAnalyzing(true);
@@ -149,6 +170,10 @@ const ImageReplicator: React.FC = () => {
         alert("请先上传或粘贴一张参考图片");
         return;
     }
+    if (selectedAspectRatios.length === 0) {
+        alert("请至少选择一个图片比例");
+        return;
+    }
 
     // Check API Key for paid models
     if ((window as any).aistudio && (selectedImageModel === 'gemini-3-pro-image-preview' || selectedImageModel.includes('imagen'))) {
@@ -159,8 +184,6 @@ const ImageReplicator: React.FC = () => {
     }
 
     setLoading(true);
-    setGeneratedImage(null);
-    setGeneratedPrompt(null);
 
     try {
         let description = analyzedPrompt;
@@ -176,32 +199,40 @@ const ImageReplicator: React.FC = () => {
         }
         
         // Step 2: Combine description with user preferences
-        setLoadingStage('正在重构创意提示词...');
-        let finalPrompt = `Recreate an image based on this description: ${description}. `;
+        setLoadingStage(`正在生成 ${selectedAspectRatios.length} 张素材...`);
+        let finalPromptBase = `Recreate an image based on this description: ${description}. `;
         if (additionalPrompt) {
-            finalPrompt += ` Additional requirements: ${additionalPrompt}. `;
+            finalPromptBase += ` Additional requirements: ${additionalPrompt}. `;
         }
         
         const ctaText = cta.split(' (')[0]; // Extract English part
         if (includeButton && ctaText) {
-            finalPrompt += ` Include a clearly visible call-to-action button with text: "${ctaText}". `;
+            finalPromptBase += ` Include a clearly visible call-to-action button with text: "${ctaText}". `;
         }
         
-        // Step 3: Generate the new image
-        setLoadingStage('正在生成新素材...');
-        const result = await generateAdImage(
-            finalPrompt,
-            aspectRatio,
-            selectedStyle,
-            "", // Visual details already in prompt
-            selectedLanguage,
-            includeText || (includeButton && !!cta),
-            includeCharacters,
-            selectedImageModel
-        );
+        // Step 3: Generate images for all selected aspect ratios
+        const generatePromises = selectedAspectRatios.map(async (ratio) => {
+            const result = await generateAdImage(
+                finalPromptBase,
+                ratio,
+                selectedStyle,
+                "", // Visual details already in prompt
+                selectedLanguage,
+                includeText || (includeButton && !!cta),
+                includeCharacters,
+                selectedImageModel
+            );
+            return {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                imageUrl: result.imageUrl,
+                prompt: result.prompt,
+                ratio: ratio,
+                timestamp: Date.now()
+            };
+        });
 
-        setGeneratedImage(result.imageUrl);
-        setGeneratedPrompt(result.prompt);
+        const newResults = await Promise.all(generatePromises);
+        setGeneratedResults(prev => [...newResults, ...prev]);
 
     } catch (error) {
         console.error(error);
@@ -212,21 +243,30 @@ const ImageReplicator: React.FC = () => {
     }
   };
 
-  const handleCopyPrompt = () => {
-    if (!generatedPrompt) return;
-    navigator.clipboard.writeText(generatedPrompt);
-    setCopiedPrompt(true);
-    setTimeout(() => setCopiedPrompt(false), 2000);
+  const handleCopyPrompt = (text: string, id: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedPromptId(id);
+    setTimeout(() => setCopiedPromptId(null), 2000);
   };
 
-  const handleDownloadImage = () => {
-    if (!generatedImage) return;
+  const handleDownloadImage = (imageUrl: string, ratio: string) => {
     const link = document.createElement('a');
-    link.href = generatedImage;
-    link.download = `replicated_image_${Date.now()}.png`;
+    link.href = imageUrl;
+    link.download = `replicated_image_${ratio.replace(':', '-')}_${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const clearResults = () => {
+      if(confirm("确定要清空所有生成历史吗？")) {
+          setGeneratedResults([]);
+      }
+  };
+
+  const removeResult = (id: string) => {
+      setGeneratedResults(prev => prev.filter(r => r.id !== id));
   };
 
   return (
@@ -238,7 +278,7 @@ const ImageReplicator: React.FC = () => {
             <RefreshCcw className="w-5 h-5 text-indigo-400" />
             图片素材仿制
           </h2>
-          <p className="text-sm text-slate-400 mt-1">上传参考图，AI 智能分析并生成风格相似的衍生素材。</p>
+          <p className="text-sm text-slate-400 mt-1">上传参考图，AI 智能分析并生成多比例衍生素材。</p>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-2">
@@ -347,33 +387,43 @@ const ImageReplicator: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">图片比例</label>
-                    <select 
-                        value={aspectRatio}
-                        onChange={(e) => setAspectRatio(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
-                    >
-                        {aspectRatioOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
+            <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Layers className="w-3 h-3" /> 图片比例 (多选)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                    {aspectRatioOptions.map(opt => {
+                        const isSelected = selectedAspectRatios.includes(opt.value);
+                        return (
+                            <button
+                                key={opt.value}
+                                onClick={() => toggleAspectRatio(opt.value)}
+                                className={`px-3 py-2 rounded-lg text-xs border transition-all ${
+                                    isSelected
+                                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-900/30'
+                                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                                }`}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
                 </div>
-                <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Palette className="w-3 h-3" /> 风格微调
-                    </label>
-                    <select 
-                        value={selectedStyle}
-                        onChange={(e) => setSelectedStyle(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
-                    >
-                        {styleOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
-                </div>
+            </div>
+
+            <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <Palette className="w-3 h-3" /> 风格微调
+                </label>
+                <select 
+                    value={selectedStyle}
+                    onChange={(e) => setSelectedStyle(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-xs"
+                >
+                    {styleOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
             </div>
 
             {/* Toggles */}
@@ -435,76 +485,106 @@ const ImageReplicator: React.FC = () => {
           className="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-900/50"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-          {loading ? 'AI 仿制中...' : '生成仿制图片'}
+          {loading ? '批量生成中...' : '生成仿制图片'}
         </button>
       </div>
 
       {/* Output Section */}
       <div className="flex-1 bg-slate-800 rounded-xl p-6 border border-slate-700/50 flex flex-col h-full overflow-hidden">
-        <h2 className="text-xl font-bold text-white mb-6">生成结果</h2>
+        <div className="flex justify-between items-center mb-6 shrink-0">
+            <h2 className="text-xl font-bold text-white">生成结果</h2>
+            {generatedResults.length > 0 && (
+                <button 
+                    onClick={clearResults}
+                    className="text-xs text-slate-400 hover:text-red-400 flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-slate-700"
+                >
+                    <Trash2 className="w-3 h-3" /> 清空历史
+                </button>
+            )}
+        </div>
         
-        <div className="flex-1 flex flex-col items-center justify-center bg-slate-900/50 rounded-xl border border-slate-700/30 overflow-hidden relative">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
             {loading ? (
-                <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col items-center justify-center h-full gap-4">
                     <div className="relative">
                         <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
                         <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full"></div>
                     </div>
                     <span className="text-sm font-medium text-indigo-300 animate-pulse">{loadingStage}</span>
                 </div>
-            ) : generatedImage ? (
-                <div className="relative w-full h-full flex items-center justify-center group bg-black/20 p-4">
-                    <img 
-                        src={generatedImage} 
-                        alt="Generated" 
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
-                    />
-                    
-                    {/* Action Bar */}
-                    <div className="absolute bottom-6 flex gap-3 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                        <button 
-                            onClick={() => setPreviewImage(generatedImage)}
-                            className="bg-black/60 hover:bg-indigo-600 text-white p-3 rounded-full backdrop-blur-md border border-white/10 shadow-lg transition-colors"
-                            title="全屏预览"
-                        >
-                            <Maximize2 className="w-5 h-5" />
-                        </button>
-                        <button 
-                            onClick={handleDownloadImage}
-                            className="bg-black/60 hover:bg-indigo-600 text-white p-3 rounded-full backdrop-blur-md border border-white/10 shadow-lg transition-colors"
-                            title="下载图片"
-                        >
-                            <Download className="w-5 h-5" />
-                        </button>
-                    </div>
+            ) : generatedResults.length > 0 ? (
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+                    {generatedResults.map((result) => (
+                        <div key={result.id} className="group relative bg-slate-900 rounded-xl border border-slate-700 overflow-hidden hover:border-indigo-500/50 transition-all flex flex-col">
+                            {/* Image Area */}
+                            <div className="relative w-full aspect-square bg-black/20 flex items-center justify-center overflow-hidden">
+                                <img 
+                                    src={result.imageUrl} 
+                                    alt={`Generated ${result.ratio}`} 
+                                    className="max-w-full max-h-full object-contain"
+                                />
+                                
+                                {/* Overlay Actions */}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2 backdrop-blur-[2px]">
+                                    <button 
+                                        onClick={() => setPreviewImage(result.imageUrl)}
+                                        className="p-2 bg-white/10 hover:bg-indigo-600 text-white rounded-full backdrop-blur-md border border-white/20 transition-colors"
+                                        title="预览"
+                                    >
+                                        <Maximize2 className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDownloadImage(result.imageUrl, result.ratio)}
+                                        className="p-2 bg-white/10 hover:bg-indigo-600 text-white rounded-full backdrop-blur-md border border-white/20 transition-colors"
+                                        title="下载"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                {/* Ratio Badge */}
+                                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded border border-white/10">
+                                    {result.ratio}
+                                </div>
+
+                                {/* Remove Button */}
+                                <button 
+                                    onClick={() => removeResult(result.id)}
+                                    className="absolute top-2 right-2 p-1.5 text-white/50 hover:text-red-400 bg-black/40 hover:bg-black/60 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+
+                            {/* Prompt Info */}
+                            <div className="p-3 border-t border-slate-700/50 bg-slate-900/50">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Prompt</span>
+                                    <button 
+                                        onClick={() => handleCopyPrompt(result.prompt, result.id)}
+                                        className="text-[10px] text-indigo-400 hover:text-white flex items-center gap-1 transition-colors"
+                                    >
+                                        {copiedPromptId === result.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                        {copiedPromptId === result.id ? 'Copied' : 'Copy'}
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-mono line-clamp-2 hover:line-clamp-none transition-all cursor-text bg-black/20 p-1.5 rounded border border-slate-800">
+                                    {result.prompt}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : (
-                <div className="text-center text-slate-500">
+                <div className="h-full flex flex-col items-center justify-center text-center text-slate-500">
                     <div className="w-16 h-16 bg-slate-800/80 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-700">
                         <ImageIcon className="w-8 h-8 text-slate-600" />
                     </div>
                     <p className="text-lg font-medium">暂无结果</p>
-                    <p className="text-sm">在左侧上传参考图并点击生成。</p>
+                    <p className="text-sm">在左侧选择比例并生成图片。</p>
                 </div>
             )}
         </div>
-
-        {/* Prompt Display */}
-        {generatedPrompt && (
-            <div className="mt-4 p-3 bg-slate-900 border border-slate-700 rounded-lg">
-                <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-bold text-slate-400 uppercase">Used Prompt</span>
-                    <button 
-                        onClick={handleCopyPrompt}
-                        className="text-xs text-indigo-400 hover:text-white flex items-center gap-1 transition-colors"
-                    >
-                        {copiedPrompt ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copiedPrompt ? 'Copied' : 'Copy'}
-                    </button>
-                </div>
-                <p className="text-xs text-slate-300 font-mono line-clamp-2 hover:line-clamp-none transition-all cursor-text">{generatedPrompt}</p>
-            </div>
-        )}
       </div>
 
       {/* Image Preview Modal */}

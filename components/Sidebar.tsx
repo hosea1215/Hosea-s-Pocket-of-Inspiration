@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart, ClipboardCheck } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart, ClipboardCheck, Apple } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -43,6 +43,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   // Quality Assurance Items
   const qualityNavItems = [
     { id: AppView.GAME_QUALITY_CHECKLIST, label: '游戏质量自查表', icon: ClipboardCheck },
+    { id: AppView.GOOGLE_PLAY_CHECKLIST, label: 'Google Play 上线自查表', icon: Store },
+    { id: AppView.APPSTORE_CHECKLIST, label: 'App Store 上线自查表', icon: Apple },
   ];
 
   // Items to be grouped under "Product Monetization" (Moved Above Growth)
@@ -85,6 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   // Items to be grouped under "Creative & Copy"
   const creativeNavItems = [
     { id: AppView.IMAGE_REPLICATION, label: '图片素材仿制', icon: RefreshCcw },
+    { id: AppView.IMAGE_COMPOSITION, label: '图片素材合成', icon: Layers },
     { id: AppView.VIDEO_ANALYZER, label: '视频拉片拆解', icon: Clapperboard },
     { id: AppView.PLAYABLE_REPLICATION, label: '试玩广告仿制', icon: Gamepad },
     { id: AppView.CREATIVE, label: 'FACEBOOK图文广告创意', icon: ImageIcon },

@@ -35,11 +35,14 @@ import AdTechNews from './components/AdTechNews';
 import AiNews from './components/AiNews';
 import MarketingCalendar from './components/MarketingCalendar';
 import ImageReplicator from './components/ImageReplicator';
+import ImageComposition from './components/ImageComposition';
 import VideoAnalyzer from './components/VideoAnalyzer';
 import PlayableReplication from './components/PlayableReplication';
 import PersonalizationAbTesting from './components/PersonalizationAbTesting';
 import GameKLineChart from './components/GameKLineChart';
 import GameQualityChecklist from './components/GameQualityChecklist';
+import GooglePlayLaunchChecklist from './components/GooglePlayLaunchChecklist';
+import AppStoreLaunchChecklist from './components/AppStoreLaunchChecklist';
 import { AppView } from './types';
 import { Search, Megaphone, Zap, BarChart2, Smartphone, Music } from 'lucide-react';
 
@@ -76,6 +79,8 @@ const App: React.FC = () => {
         return <CreativeLab />;
       case AppView.IMAGE_REPLICATION:
         return <ImageReplicator />;
+      case AppView.IMAGE_COMPOSITION:
+        return <ImageComposition />;
       case AppView.VIDEO_ANALYZER:
         return <VideoAnalyzer />;
       case AppView.PLAYABLE_REPLICATION:
@@ -118,6 +123,10 @@ const App: React.FC = () => {
         return <GameKLineChart />;
       case AppView.GAME_QUALITY_CHECKLIST:
         return <GameQualityChecklist />;
+      case AppView.GOOGLE_PLAY_CHECKLIST:
+        return <GooglePlayLaunchChecklist />;
+      case AppView.APPSTORE_CHECKLIST:
+        return <AppStoreLaunchChecklist />;
       case AppView.STORE_COMPARISON:
         return <StoreComparison />;
       case AppView.PUSH_STRATEGY:
@@ -175,6 +184,7 @@ const App: React.FC = () => {
       case AppView.MARKETING_CALENDAR: return '主要国家营销日历';
       case AppView.CREATIVE: return 'FACEBOOK图文广告创意';
       case AppView.IMAGE_REPLICATION: return '图片素材仿制';
+      case AppView.IMAGE_COMPOSITION: return '图片素材合成';
       case AppView.VIDEO_ANALYZER: return '视频拉片拆解';
       case AppView.PLAYABLE_REPLICATION: return '试玩广告仿制';
       case AppView.ICON_GEN: return '谷歌商店ICON生成';
@@ -196,6 +206,8 @@ const App: React.FC = () => {
       case AppView.PERSONALIZATION_AB: return '个性化与AB测试';
       case AppView.GAME_K_LINE: return '游戏买量K线图';
       case AppView.GAME_QUALITY_CHECKLIST: return '游戏质量自查表';
+      case AppView.GOOGLE_PLAY_CHECKLIST: return 'Google Play 上线自查表';
+      case AppView.APPSTORE_CHECKLIST: return 'App Store 上线自查表';
       case AppView.STORE_COMPARISON: return '游戏商店详情页对比';
       case AppView.PUSH_STRATEGY: return '游戏通知PUSH策略';
       case AppView.LIVEOPS_GEN: return 'GooglePlay LiveOps物料';

@@ -1,3 +1,4 @@
+
 // ... existing imports
 import { GoogleGenAI, Schema, Type } from "@google/genai";
 import { 
@@ -156,6 +157,68 @@ export const generateAdImage = async (prompt: string, aspectRatio: string, style
         }
         
         return { imageUrl, prompt: fullPrompt, promptZh: "" };
+    }
+};
+
+export const generateCompositeImage = async (
+    images: { label: string, data: string, mimeType: string }[],
+    prompt: string,
+    aspectRatio: string,
+    style: string,
+    modelName: string
+) => {
+    // Construct the prompt combining text and image parts
+    const textPrompt = `Compose a high-quality mobile game ad creative using the provided reference images. 
+    Aspect Ratio: ${aspectRatio}. 
+    Style: ${style}. 
+    
+    Instructions:
+    ${prompt}
+    
+    References provided (use these elements):
+    ${images.map(img => `- ${img.label}`).join('\n')}
+    
+    Ensure the composition is coherent, visually appealing, and looks like a finished advertisement.`;
+
+    const contents = [];
+    
+    // Add text instructions first
+    contents.push({ text: textPrompt });
+
+    // Add images
+    images.forEach(img => {
+        contents.push({ text: `Reference for ${img.label}:` });
+        contents.push({
+            inlineData: {
+                mimeType: img.mimeType,
+                data: img.data
+            }
+        });
+    });
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: contents
+        });
+
+        let imageUrl = "";
+        let generatedText = "";
+
+        if (response.candidates?.[0]?.content?.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData) {
+                    imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                } else if (part.text) {
+                    generatedText += part.text;
+                }
+            }
+        }
+
+        return { imageUrl, prompt: textPrompt, debugText: generatedText };
+    } catch (e) {
+        console.error("Composite image generation error:", e);
+        throw e;
     }
 };
 
