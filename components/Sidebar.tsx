@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart, ClipboardCheck, Apple, Braces, MessageCircleQuestion } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart, ClipboardCheck, Apple, Braces, MessageCircleQuestion, QrCode, Mail } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -23,6 +23,7 @@ const accessLogData = [
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showAccessLog, setShowAccessLog] = useState(false);
+  const [showContactQr, setShowContactQr] = useState(false);
   const [growthExpanded, setGrowthExpanded] = useState(false);
   const [monetizationExpanded, setMonetizationExpanded] = useState(false);
   const [newsExpanded, setNewsExpanded] = useState(false);
@@ -458,19 +459,22 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
         <div className="p-4 border-t border-slate-800">
           {!collapsed ? (
             <div className="bg-slate-800/50 rounded-lg p-4 transition-all duration-300 opacity-100">
-              <p className="text-xs text-slate-500 font-medium mb-1">当前套餐</p>
+              <p className="text-xs text-slate-500 font-medium mb-1">Hosea</p>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-300 font-semibold">专业版</span>
-                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">活跃</span>
+                <button 
+                    onClick={() => setShowContactQr(true)}
+                    className="text-sm text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors"
+                >
+                    联系我
+                    <QrCode className="w-3 h-3" />
+                </button>
               </div>
-              <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-indigo-500 h-full w-3/4 rounded-full"></div>
-              </div>
-              <p className="text-xs text-slate-500 mt-2">已使用 75% 代币</p>
+              <p className="text-xs text-slate-500 mt-2">尽信书，则不如无书。</p>
+              <p className="text-xs text-slate-500 mt-1">大胆的假设，小心的求证。</p>
             </div>
           ) : (
             <div className="flex justify-center py-2">
-               <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" title="专业版活跃"></div>
+               <button onClick={() => setShowContactQr(true)} className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" title="联系我"></button>
             </div>
           )}
         </div>
@@ -566,6 +570,52 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
               <p className="text-xs text-slate-600">系统日志自动记录所有访问行为 • IP地址已脱敏处理</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* QR Code Contact Modal */}
+      {showContactQr && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowContactQr(false)}>
+            <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                <button onClick={() => setShowContactQr(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-800 transition-colors p-1 rounded-full hover:bg-gray-100">
+                    <X className="w-5 h-5" />
+                </button>
+                <div className="flex flex-col items-center gap-5 py-4">
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-slate-900 flex items-center justify-center gap-2 mb-1">
+                            <MessageCircleQuestion className="w-6 h-6 text-[#07c160]" />
+                            联系 Hosea
+                        </h3>
+                        <p className="text-sm text-slate-500">有更多的建议欢迎联系我</p>
+                    </div>
+                    
+                    <div className="p-3 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 flex justify-center items-center">
+                        {/* Avatar Image Placeholder */}
+                        <img 
+                            src="https://lh3.googleusercontent.com/a/ACg8ocJ3OJzhXjV_eg-UyrIXcTpMjzrQwoF4fLJyVv2KCMdBK8QQA_x6=s120-c" 
+                            alt="Hosea Avatar" 
+                            className="w-40 h-40 object-cover rounded-full" 
+                        />
+                    </div>
+                    
+                    <div className="flex flex-col items-center gap-1">
+                        <p className="text-sm font-semibold text-slate-700">欢迎添加好友交流</p>
+                        <p className="text-xs text-slate-400">添加好友请备注 "灵感口袋"</p>
+                    </div>
+
+                    <div className="w-full space-y-3">
+                        <div className="bg-slate-50 p-3 rounded-lg flex flex-col gap-1 text-center">
+                            <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">微信号 (WeChat)</p>
+                            <p className="text-slate-800 font-mono font-bold text-lg select-all">hosea0563</p>
+                        </div>
+                        
+                        <div className="bg-slate-50 p-3 rounded-lg flex flex-col gap-1 text-center">
+                            <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Email</p>
+                            <p className="text-slate-800 font-mono font-medium select-all break-all">hehanqing@ivymobile.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
       )}
     </>

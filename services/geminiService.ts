@@ -24,6 +24,7 @@ import {
   EconomicMetrics
 } from "../types";
 
+// Initialize a default client for non-critical or initial calls, but prefer creating fresh instances for stateful operations
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- Helper Functions ---
@@ -39,11 +40,13 @@ const createMeta = (model: string, prompt: string, response?: any): AiMetadata =
 });
 
 const generateText = async (prompt: string, model: string = 'gemini-3-pro-preview', useSearch: boolean = false) => {
+  // Use fresh client for each request to ensure API key is current
+  const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const config: any = {};
   if (useSearch) {
     config.tools = [{ googleSearch: {} }];
   }
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model,
     contents: prompt,
     config
@@ -52,6 +55,7 @@ const generateText = async (prompt: string, model: string = 'gemini-3-pro-previe
 };
 
 const generateJson = async <T>(prompt: string, model: string = 'gemini-3-pro-preview', schemaType?: Schema): Promise<AiResponse<T>> => {
+  const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const config: any = {
     responseMimeType: "application/json",
   };
@@ -59,7 +63,7 @@ const generateJson = async <T>(prompt: string, model: string = 'gemini-3-pro-pre
     config.responseSchema = schemaType;
   }
   
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model,
     contents: prompt,
     config
@@ -82,7 +86,9 @@ const generateJson = async <T>(prompt: string, model: string = 'gemini-3-pro-pre
 // --- Exported Service Functions ---
 
 export const createChatSession = (model: string, systemInstruction?: string) => {
-  return ai.chats.create({
+  // IMPORTANT: Create a new client instance to ensure we use the latest API key (e.g. after user selects one)
+  const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return client.chats.create({
     model: model,
     config: { systemInstruction }
   });
@@ -170,26 +176,24 @@ export const generateAdImage = async (
   includeCharacters: boolean,
   model: string = 'gemini-2.5-flash-image'
 ) => {
+  const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
   let fullPrompt = `${prompt}. Style: ${style}. ${visualDetails}. Language: ${language}.`;
   if (includeText) fullPrompt += " Include relevant text/headlines.";
   if (includeCharacters) fullPrompt += " Include main characters.";
   
-  // Map Aspect Ratio strings to what API expects if needed, generally Gemini API expects "1:1", "16:9" etc.
-  
   if (model.includes('imagen')) {
-    const response = await ai.models.generateImages({
+    const response = await client.models.generateImages({
         model: 'imagen-3.0-generate-002',
         prompt: fullPrompt,
         config: {
             numberOfImages: 1,
-            aspectRatio: ratio as any // Imagen supports these strings
+            aspectRatio: ratio as any
         }
     });
     const b64 = response.generatedImages[0].image.imageBytes;
     return { imageUrl: `data:image/png;base64,${b64}`, prompt: fullPrompt, promptZh: "" };
   } else {
-    // gemini model
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
         model: model,
         contents: { parts: [{ text: fullPrompt }] },
         config: {
@@ -211,6 +215,7 @@ export const generateAdImage = async (
 };
 
 export const generateCompositeImage = async (images: { label: string, data: string, mimeType: string }[], prompt: string, ratio: string, style: string, model: string) => {
+  const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const parts = images.map(img => ({
       inlineData: { data: img.data, mimeType: img.mimeType }
   }));
@@ -225,12 +230,10 @@ export const generateCompositeImage = async (images: { label: string, data: stri
 
   let effectiveModel = model;
   if (model.includes('imagen')) {
-      // Imagen doesn't support multi-modal input in generateImages easily via this SDK in one go for composition the same way Gemini does with parts
-      // Fallback to Gemini for composition
       effectiveModel = 'gemini-3-pro-image-preview'; 
   }
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
       model: effectiveModel,
       contents: { parts: [...parts, textPart] },
       config: {
@@ -363,8 +366,6 @@ export const analyzeCompetitor = async (gameName: string, url: string, language:
   - market: { financialTrends, rankingHistory, genderDistribution, ageDistribution }
   `;
   
-  // Note: Schema definition is complex here, for brevity we rely on the model's instruction following or define simplified schema if strictly needed.
-  // Using 'any' for the generic type to allow flexible return, but ideally should match CompetitorReport structure.
   return generateJson<any>(prompt, model);
 };
 
@@ -552,7 +553,8 @@ export const generateOmnichannelStrategy = async (details: GameDetails, gpUrl: s
 };
 
 export const describeImageForRecreation = async (base64: string, mimeType: string, model: string) => {
-  const response = await ai.models.generateContent({
+  const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const response = await client.models.generateContent({
     model: model,
     contents: {
       parts: [
@@ -575,6 +577,7 @@ export const generatePersonalizationStrategy = async (
 };
 
 export const analyzeVideoFrames = async (frames: string[], context: string, scriptLang: string, storyboardLang: string, promptLang: string, model: string) => {
+  const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const parts: any[] = frames.map(f => ({ inlineData: { data: f, mimeType: 'image/jpeg' } }));
   parts.push({ text: `Analyze these video frames. Context: ${context}.
   Output Script Language: ${scriptLang}.
@@ -584,7 +587,6 @@ export const analyzeVideoFrames = async (frames: string[], context: string, scri
   - script: string (The video script/narrative)
   - storyboard: Array of { id, shotNumber, description, audio, visualPrompt }` });
 
-  // Add schema for strict JSON
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -610,7 +612,7 @@ export const analyzeVideoFrames = async (frames: string[], context: string, scri
       responseSchema: schema
   };
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model,
     contents: { parts },
     config
@@ -619,7 +621,6 @@ export const analyzeVideoFrames = async (frames: string[], context: string, scri
   let data: VideoAnalysisResponse;
   try {
       data = JSON.parse(response.text || "{}");
-      // Ensure IDs are strings if model returns numbers or missing
       if (data.storyboard) {
           data.storyboard = data.storyboard.map((s, i) => ({
               ...s,
@@ -635,8 +636,6 @@ export const analyzeVideoFrames = async (frames: string[], context: string, scri
 };
 
 export const analyzeVideoUrl = async (videoUrl: string, context: string, scriptLang: string, storyboardLang: string, promptLang: string, model: string) => {
-  // Since we cannot fetch video bytes directly from URL easily in client-side without proxy/CORS, 
-  // we use Google Search grounding to "watch" or find info about the video if it's public (like YouTube).
   const prompt = `Analyze the video at ${videoUrl}. Context: ${context}.
   Output Script Language: ${scriptLang}.
   Output Storyboard Description Language: ${storyboardLang}.
@@ -645,15 +644,15 @@ export const analyzeVideoUrl = async (videoUrl: string, context: string, scriptL
   - script: string
   - storyboard: Array of { id, shotNumber, description, audio, visualPrompt }`;
 
-  return generateJson<VideoAnalysisResponse>(prompt, model); // Will likely use internal knowledge or search if enabled
+  return generateJson<VideoAnalysisResponse>(prompt, model); 
 };
 
 export const generateVideoFromImage = async (prompt: string, imageUrl: string, model: string) => {
-    // imageUrl is data url, need to strip header
+    const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const base64 = imageUrl.split(',')[1];
     const mimeType = imageUrl.substring(imageUrl.indexOf(':') + 1, imageUrl.indexOf(';'));
     
-    let operation = await ai.models.generateVideos({
+    let operation = await client.models.generateVideos({
       model: model,
       prompt: prompt,
       image: {
@@ -669,7 +668,7 @@ export const generateVideoFromImage = async (prompt: string, imageUrl: string, m
     
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 5000));
-      operation = await ai.operations.getVideosOperation({operation: operation});
+      operation = await client.operations.getVideosOperation({operation: operation});
     }
     
     const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
@@ -690,7 +689,6 @@ export const generatePlayableCode = async (concept: string, model: string) => {
   Use inline CSS and JS. Use a simple 2D canvas approach or DOM elements. No external assets (use placeholders).
   Ensure it handles clicks and has a 'Call to Action' end screen.`;
   const { text } = await generateText(prompt, model);
-  // Extract code block if present
   const codeBlock = text.match(/```html([\s\S]*?)```/);
   return codeBlock ? codeBlock[1] : text;
 };

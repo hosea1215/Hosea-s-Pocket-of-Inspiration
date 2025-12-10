@@ -49,6 +49,9 @@ const CuriousMind: React.FC = () => {
     { value: 'Data Analyst (数据分析师)', label: '数据分析师 (Data Analyst)' },
     { value: 'Market Researcher (市场调研)', label: '市场调研 (Market Researcher)' },
     { value: 'Technical Director (技术总监)', label: '技术总监 (Technical Director)' },
+    { value: 'American Woman (美国妇女)', label: '美国妇女 (American Woman)' },
+    { value: 'Gaming Novice (游戏小白)', label: '游戏小白 (Gaming Novice)' },
+    { value: 'Waitress (餐厅服务员)', label: '餐厅服务员 (Waitress)' },
   ];
 
   const styleOptions = [
@@ -62,6 +65,8 @@ const CuriousMind: React.FC = () => {
   ];
 
   const defaultQuestions = [
+    "手机游戏FACEBOOK推广计划",
+    "手机游戏全球全渠道发行所需要的素材。",
     "了解下DSP渠道。",
     "了解下全球手机预装渠道。",
     "了解下归因SANs vs. MMP。",
@@ -77,6 +82,7 @@ const CuriousMind: React.FC = () => {
   }, [selectedModel]); // Re-init if model changes
 
   const initChat = () => {
+    // Create a new session with current config
     chatSessionRef.current = createChatSession(selectedModel, "You are a helpful, creative, and knowledgeable AI assistant for a mobile game marketing and development platform. Your persona is 'Curious Mind' (好奇宝宝). Be insightful, encouraging, and detailed.");
     setMessages([
         { role: 'model', text: '你好！我是你的好奇宝宝 (Curious Mind)。无论你想探讨游戏设计、市场趋势，还是寻找创意灵感，我都准备好了。咱们开始吧？' }
@@ -92,7 +98,12 @@ const CuriousMind: React.FC = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || !chatSessionRef.current) return;
+    if (!input.trim()) return;
+    
+    // Ensure session exists
+    if (!chatSessionRef.current) {
+        initChat();
+    }
 
     const userMsg = input.trim();
     setInput('');
@@ -107,37 +118,40 @@ const CuriousMind: React.FC = () => {
       let styleInstruction = `Act as: ${selectedExpert}. Tone/Style: ${selectedStyle}.`;
 
       if (translate) {
-          effectivePrompt = `${userMsg}\n\n[System Instruction: ${styleInstruction} Please provide the answer in ${language}. Then, provide a translation in Simplified Chinese below the answer, separated by a horizontal rule.]`;
+          effectivePrompt = `${userMsg}\n\n[Context: ${styleInstruction} Please provide the answer in ${language}. Then, provide a translation in Simplified Chinese below the answer, separated by a horizontal rule.]`;
       } else {
-          effectivePrompt = `${userMsg}\n\n[System Instruction: ${styleInstruction} Please answer in ${language}.]`;
+          effectivePrompt = `${userMsg}\n\n[Context: ${styleInstruction} Please answer in ${language}.]`;
       }
 
-      // Fix: sendMessageStream expects an object with message property
-      const result = await chatSessionRef.current.sendMessageStream({ message: effectivePrompt });
-      
-      let fullResponse = "";
-      
-      // Add placeholder for AI response
-      setMessages(prev => [...prev, { role: 'model', text: '' }]);
+      // Safe access to chat session
+      if(chatSessionRef.current) {
+          const result = await chatSessionRef.current.sendMessageStream({ message: effectivePrompt });
+          
+          let fullResponse = "";
+          
+          // Add placeholder for AI response
+          setMessages(prev => [...prev, { role: 'model', text: '' }]);
 
-      // Fix: Iterate over result directly and access .text property
-      for await (const chunk of result) {
-        const chunkText = chunk.text;
-        if (chunkText) {
-            fullResponse += chunkText;
-            
-            // Update the last message (AI's response) with accumulated text
-            setMessages(prev => {
-                const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = { role: 'model', text: fullResponse };
-                return newMessages;
-            });
-        }
+          for await (const chunk of result) {
+            const chunkText = chunk.text;
+            if (chunkText) {
+                fullResponse += chunkText;
+                
+                // Update the last message (AI's response) with accumulated text
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = { role: 'model', text: fullResponse };
+                    return newMessages;
+                });
+            }
+          }
       }
 
     } catch (error) {
       console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: '**Error:** 抱歉，我遇到了一些问题，请稍后重试。' }]);
+      setMessages(prev => [...prev, { role: 'model', text: '**Error:** 抱歉，遇到了一些问题。可能是网络原因或 API Key 状态失效，请刷新页面或重试。' }]);
+      // Re-init chat on error to be safe for next attempt
+      initChat();
     } finally {
       setLoading(false);
     }
