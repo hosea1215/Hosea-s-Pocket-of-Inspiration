@@ -53,8 +53,7 @@ const ImageComposition: React.FC = () => {
 
   const modelOptions = [
     { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
-    { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' },
-    { value: 'imagen-3.0-generate-002', label: 'Imagen 3 (专业绘图)' }
+    { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' }
   ];
 
   const styleOptions = [
@@ -146,7 +145,7 @@ const ImageComposition: React.FC = () => {
     }
 
     // Check API Key for paid models
-    if ((window as any).aistudio && (selectedModel === 'gemini-3-pro-image-preview' || selectedModel.includes('imagen'))) {
+    if ((window as any).aistudio && (selectedModel === 'gemini-3-pro-image-preview')) {
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         if (!hasKey) {
             await (window as any).aistudio.openSelectKey();

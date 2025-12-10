@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart, ClipboardCheck, Apple } from 'lucide-react';
+import { FileText, Image as ImageIcon, Settings, Gamepad2, Shapes, Languages, Trophy, Headphones, Repeat, Calculator, ExternalLink, ChevronLeft, ChevronRight, Swords, ArrowRightLeft, Bell, Calendar, AlertCircle, X, Activity, MapPin, Monitor, Magnet, Search, Briefcase, ChevronDown, PenTool, Brain, Layers, Octagon, MousePointerClick, Waves, Dices, FlaskConical, Zap, Users, BookOpen, Book, TrendingUp, Coins, MonitorPlay, Gem, Newspaper, Store, BarChart2, Megaphone, Smartphone, Music, Gavel, Tags, Bot, Globe, RefreshCcw, Split, Clapperboard, Gamepad, Map, CandlestickChart, ClipboardCheck, Apple, Braces } from 'lucide-react';
 import { AppView } from '../types';
 import { researchExplanations } from '../constants';
 
@@ -117,6 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: AppView.STORE_COMPARISON, label: '游戏商店详情页对比', icon: ArrowRightLeft },
     { id: AppView.ASO_KEYWORDS, label: 'ASO 关键词分析', icon: Search },
     { id: AppView.ICON_GEN, label: '谷歌商店ICON生成', icon: Shapes },
+    { id: AppView.JSON_ANALYZER, label: 'JSON 分析', icon: Braces },
   ];
 
   // Auto-expand groups if current view is inside them

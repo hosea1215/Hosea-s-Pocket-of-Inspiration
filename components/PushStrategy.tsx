@@ -267,7 +267,32 @@ const PushStrategy: React.FC = () => {
                 <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
               </label>
             </div>
-            {/* ... other toggles ... */}
+
+            <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
+              <div className={`p-2 rounded-lg ${includeTiming ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-white block">包含发送时机建议</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={includeTiming} onChange={(e) => setIncludeTiming(e.target.checked)} className="sr-only peer" />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-lg border border-slate-700">
+              <div className={`p-2 rounded-lg ${showTranslation ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
+                <Languages className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-white block">提供中文翻译</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={showTranslation} onChange={(e) => setShowTranslation(e.target.checked)} className="sr-only peer" />
+                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
           </div>
         </div>
 

@@ -1,12 +1,33 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Swords, Loader2, Copy, Check, Link as LinkIcon, Search, RefreshCw, BarChart2, Globe, Clock, Users, Percent, Target, Heart, Briefcase, Wallet, Gamepad2, Layers, Repeat, Zap, Bell, Volume2, Store, Palette, MessageCircle, Share2, Code, Flag, AlertTriangle, User, Calendar, TrendingUp, Smartphone, MessageSquare, FileText, Cpu } from 'lucide-react';
+import { Swords, Loader2, Copy, Check, Link as LinkIcon, Search, RefreshCw, BarChart2, Globe, Clock, Users, Percent, Target, Heart, Briefcase, Wallet, Gamepad2, Layers, Repeat, Zap, Bell, Volume2, Store, Palette, MessageCircle, Share2, Code, Flag, AlertTriangle, User, Calendar, TrendingUp, Smartphone, MessageSquare, FileText, Cpu, Filter, X, ChevronDown } from 'lucide-react';
 import { analyzeCompetitor, extractGameNameFromUrl } from '../services/geminiService';
 import { CompetitorMetrics, TargetAudience, CompetitorReport, MarketPerformance, AiMetadata } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { exportToGoogleDocs } from '../utils/exportUtils';
 import AiMetaDisplay from './AiMetaDisplay';
+
+const dimensionOptions = [
+  { key: 'marketAnalysis', label: '市场分析 (Market Analysis)' },
+  { key: 'productAnalysis', label: '产品体验 (Product Experience)' },
+  { key: 'coreGameplay', label: '核心玩法 (Core Gameplay)' },
+  { key: 'abacrAnalysis', label: '关卡设计 (ABACR)' },
+  { key: 'hookedModel', label: '上瘾模型 (Hooked Model)' },
+  { key: 'emotionalAttachment', label: '情感挂念 (Emotional Attachment)' },
+  { key: 'pushStrategy', label: 'Push策略 (Push Strategy)' },
+  { key: 'asmrPotential', label: 'ASMR潜力 (ASMR Potential)' },
+  { key: 'monetization', label: '商业化 (Monetization)' },
+  { key: 'liveOps', label: '长线运营 (LiveOps)' },
+  { key: 'gameEvents', label: '活动设计 (Game Events)' },
+  { key: 'branding', label: '品牌叙事 (Branding)' },
+  { key: 'community', label: '社群运营 (Community)' },
+  { key: 'ipPotential', label: 'IP联动 (IP Potential)' },
+  { key: 'techStack', label: '技术架构 (Tech Stack)' },
+  { key: 'localization', label: '本地化 (Localization)' },
+  { key: 'userReviews', label: '用户评论 (User Reviews)' },
+  { key: 'swot', label: 'SWOT分析 (SWOT)' },
+];
 
 const CompetitorAnalysis: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -15,6 +36,13 @@ const CompetitorAnalysis: React.FC = () => {
   const [storeUrl, setStoreUrl] = useState('https://play.google.com/store/apps/details?id=com.puzzlegames.puzzlebrickslegend');
   const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
   const [language, setLanguage] = useState('Simplified Chinese (简体中文)');
+  
+  // Dimension Selection State
+  const [limitDimensions, setLimitDimensions] = useState(false);
+  const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [report, setReport] = useState<CompetitorReport | null>(null);
   const [metrics, setMetrics] = useState<CompetitorMetrics | null>(null);
   const [audience, setAudience] = useState<TargetAudience | null>(null);
@@ -39,6 +67,32 @@ const CompetitorAnalysis: React.FC = () => {
     "French (法语)"
   ];
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  const toggleDimension = (key: string) => {
+    setSelectedDimensions(prev => 
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
+
+  const removeDimension = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDimensions(prev => prev.filter(k => k !== key));
+  };
+
   const handleAnalyze = async () => {
     if (!gameName || !storeUrl) {
       alert("请填写游戏名称和商店链接");
@@ -50,8 +104,14 @@ const CompetitorAnalysis: React.FC = () => {
     setAudience(null);
     setMarket(null);
     setMeta(null);
+    
     try {
-      const { data, meta } = await analyzeCompetitor(gameName, storeUrl, language, selectedModel);
+      // If limited, pass only selected dimensions map keys
+      const dimensionsToAnalyze = limitDimensions && selectedDimensions.length > 0 
+        ? selectedDimensions 
+        : undefined;
+
+      const { data, meta } = await analyzeCompetitor(gameName, storeUrl, language, selectedModel, dimensionsToAnalyze);
       setReport(data.report);
       setMetrics(data.metrics);
       setAudience(data.audience);
@@ -84,7 +144,11 @@ const CompetitorAnalysis: React.FC = () => {
 
   const handleCopy = () => {
     if (!report) return;
-    const fullText = Object.values(report).join('\n\n');
+    // Only copy non-empty fields
+    const fullText = Object.entries(report)
+        .filter(([_, value]) => value)
+        .map(([_, value]) => value)
+        .join('\n\n');
     navigator.clipboard.writeText(fullText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -149,6 +213,7 @@ const CompetitorAnalysis: React.FC = () => {
     // Detailed Report Section
     markdown += `## 4. Detailed Analysis (深度拆解)\n\n`;
     markdown += Object.entries(report)
+      .filter(([_, value]) => value) // Only include present values
       .map(([key, value]) => `### ${key.replace(/([A-Z])/g, ' $1').trim()}\n${value}`)
       .join('\n\n');
 
@@ -167,17 +232,20 @@ const CompetitorAnalysis: React.FC = () => {
     </div>
   );
 
-  const AnalysisCard = ({ title, icon: Icon, content, colorClass }: { title: string, icon: React.ElementType, content: string, colorClass: string }) => (
-     <div className="bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden hover:border-slate-600 transition-all flex flex-col h-full">
+  const AnalysisCard = ({ title, icon: Icon, content, colorClass }: { title: string, icon: React.ElementType, content: string, colorClass: string }) => {
+     if (!content) return null; // Don't render empty cards
+     return (
+     <div className="bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden hover:border-slate-600 transition-all flex flex-col h-full animate-in fade-in zoom-in-95 duration-300">
         <div className={`px-4 py-3 border-b border-slate-800 flex items-center gap-2 ${colorClass} bg-slate-900/50`}>
           <Icon className="w-4 h-4" />
           <h3 className="font-bold text-sm">{title}</h3>
         </div>
         <div className="p-4 prose prose-invert prose-sm max-w-none flex-1 overflow-hidden overflow-y-auto custom-scrollbar max-h-[300px]">
-           <ReactMarkdown>{content || "暂无数据"}</ReactMarkdown>
+           <ReactMarkdown>{content}</ReactMarkdown>
         </div>
      </div>
-  );
+     );
+  };
 
   const COLORS = ['#818cf8', '#34d399', '#f472b6', '#facc15', '#60a5fa', '#a78bfa'];
 
@@ -262,9 +330,73 @@ const CompetitorAnalysis: React.FC = () => {
             </select>
           </div>
 
+          {/* Dimension Limiting Toggle */}
+          <div>
+             <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                   <Filter className="w-3 h-3" /> 是否限定分析纬度
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={limitDimensions} 
+                    onChange={(e) => setLimitDimensions(e.target.checked)} 
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+             </div>
+
+             {limitDimensions && (
+                <div ref={dropdownRef} className="relative animate-in fade-in slide-in-from-top-2">
+                    <div 
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 min-h-[42px] cursor-pointer hover:border-slate-600 transition-colors flex flex-wrap gap-2 items-center"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    >
+                        {selectedDimensions.length === 0 && <span className="text-slate-500 text-xs">选择需要分析的维度...</span>}
+                        {selectedDimensions.map(key => {
+                            const option = dimensionOptions.find(opt => opt.key === key);
+                            return (
+                                <span key={key} className="bg-indigo-600/20 text-indigo-300 text-[10px] px-2 py-1 rounded flex items-center gap-1 border border-indigo-600/30">
+                                    {option?.label.split(' (')[0]}
+                                    <X 
+                                        className="w-3 h-3 hover:text-white cursor-pointer" 
+                                        onClick={(e) => removeDimension(key, e)}
+                                    />
+                                </span>
+                            );
+                        })}
+                        <div className="ml-auto">
+                            <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                    </div>
+
+                    {isDropdownOpen && (
+                        <div className="absolute z-50 mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-[300px] overflow-y-auto custom-scrollbar p-2">
+                            {dimensionOptions.map((opt) => {
+                                const isSelected = selectedDimensions.includes(opt.key);
+                                return (
+                                    <div 
+                                        key={opt.key} 
+                                        className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors border ${isSelected ? 'bg-indigo-600/20 border-indigo-600/50' : 'hover:bg-slate-800 border-transparent'}`}
+                                        onClick={() => toggleDimension(opt.key)}
+                                    >
+                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600'}`}>
+                                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                                        </div>
+                                        <span className={`text-xs ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>{opt.label}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+             )}
+          </div>
+
           <div className="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/20">
              <h4 className="text-indigo-300 font-bold text-xs mb-2 flex items-center gap-1">
-               <Search className="w-3 h-3" /> 分析维度
+               <Search className="w-3 h-3" /> 分析维度概览
              </h4>
              <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
                <li><strong className="text-slate-300">市场表现:</strong> 综合评价与趋势分析</li>

@@ -43,6 +43,7 @@ import GameKLineChart from './components/GameKLineChart';
 import GameQualityChecklist from './components/GameQualityChecklist';
 import GooglePlayLaunchChecklist from './components/GooglePlayLaunchChecklist';
 import AppStoreLaunchChecklist from './components/AppStoreLaunchChecklist';
+import JsonAnalyzer from './components/JsonAnalyzer';
 import { AppView } from './types';
 import { Search, Megaphone, Zap, BarChart2, Smartphone, Music } from 'lucide-react';
 
@@ -161,6 +162,8 @@ const App: React.FC = () => {
         return <AdTechNews platform="AppLovin" icon={Zap} />;
       case AppView.APPSFLYER_NEWS:
         return <AdTechNews platform="AppsFlyer" icon={BarChart2} />;
+      case AppView.JSON_ANALYZER:
+        return <JsonAnalyzer />;
       case AppView.SETTINGS:
         return <div className="text-white">设置 (占位符)</div>;
       default:
@@ -225,6 +228,7 @@ const App: React.FC = () => {
       case AppView.APPLE_SEARCH_ADS_NEWS: return 'APPLE SEARCH ADS最新资讯';
       case AppView.APPLOVIN_NEWS: return 'APPLOVIN最新资讯';
       case AppView.APPSFLYER_NEWS: return 'APPSFLYER最新资讯';
+      case AppView.JSON_ANALYZER: return 'JSON 代码分析';
       case AppView.SETTINGS: return '设置';
       default: return 'FACEBOOK广告策略';
     }

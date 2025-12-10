@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Gamepad, Loader2, Copy, Check, FileText, Cpu, Search, Sparkles, Play, Code, Globe, Download, X } from 'lucide-react';
+import { Gamepad, Loader2, Copy, Check, FileText, Cpu, Search, Sparkles, Play, Code, Globe, Download, X, Upload, Link as LinkIcon, AlignLeft } from 'lucide-react';
 import { generatePlayableConcept, generatePlayableCode } from '../services/geminiService';
 import { exportToGoogleDocs } from '../utils/exportUtils';
 import { AiMetadata } from '../types';
@@ -11,7 +11,14 @@ const PlayableReplication: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [codeLoading, setCodeLoading] = useState(false);
   const [gameName, setGameName] = useState('COLOR BLOCK');
+  
+  // Input Source State
+  const [inputType, setInputType] = useState<'desc' | 'file' | 'url'>('desc');
   const [description, setDescription] = useState('一段展示拖拽消除方块的视频，最后有一个“试玩结束”的 End Card。');
+  const [adUrl, setAdUrl] = useState('');
+  const [adFile, setAdFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
   const [language, setLanguage] = useState('Chinese (中文)');
   
@@ -33,17 +40,68 @@ const PlayableReplication: React.FC = () => {
     { value: 'English (英文)', label: '英文 (English)' },
   ];
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        setAdFile(e.target.files[0]);
+    }
+  };
+
+  const readFileContent = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
+    });
+  };
+
   const handleGenerate = async () => {
-    if (!gameName || !description) {
-      alert("请填写游戏名称和描述");
+    if (!gameName) {
+      alert("请填写游戏名称");
       return;
     }
+
+    let finalPrompt = description;
+
+    if (inputType === 'url') {
+        if (!adUrl) {
+            alert("请输入试玩广告 URL");
+            return;
+        }
+        finalPrompt = `Analyze the Playable Ad at this URL: ${adUrl}.\n\nAdditional Context: ${description}`;
+    } else if (inputType === 'file') {
+        if (!adFile) {
+            alert("请上传试玩广告文件");
+            return;
+        }
+        
+        if (adFile.name.endsWith('.html') || adFile.name.endsWith('.htm')) {
+            try {
+                // Read first 200KB to avoid excessive token usage if file is massive
+                const content = await readFileContent(adFile);
+                const truncatedContent = content.substring(0, 200000); 
+                finalPrompt = `Analyze the following HTML code for a Playable Ad.\n\nCode Snippet:\n${truncatedContent}\n\nAdditional Context: ${description}`;
+            } catch (e) {
+                console.error("File read error", e);
+                alert("文件读取失败");
+                return;
+            }
+        } else {
+            finalPrompt = `Analyze the uploaded Playable Ad file: ${adFile.name}.\n\nAdditional Context: ${description}`;
+        }
+    } else {
+        if (!description) {
+            alert("请填写玩法描述");
+            return;
+        }
+    }
+
     setLoading(true);
     setResult(null);
     setMeta(null);
     setHtmlCode(null);
     try {
-      const response = await generatePlayableConcept(gameName, description, language, selectedModel);
+      const response = await generatePlayableConcept(gameName, finalPrompt, language, selectedModel);
       setResult(response.data);
       setMeta(response.meta);
     } catch (error) {
@@ -109,7 +167,7 @@ const PlayableReplication: React.FC = () => {
             <Gamepad className="w-5 h-5 text-indigo-400" />
             试玩广告仿制
           </h2>
-          <p className="text-sm text-slate-400 mt-1">输入参考视频描述，AI 将为您生成试玩广告的设计文档与开发逻辑。</p>
+          <p className="text-sm text-slate-400 mt-1">输入参考素材，AI 将为您生成试玩广告的设计文档与开发逻辑。</p>
         </div>
 
         <div className="space-y-5 flex-1 overflow-y-auto custom-scrollbar">
@@ -124,14 +182,89 @@ const PlayableReplication: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">参考视频 / 玩法描述</label>
-            <textarea 
-              rows={6}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="详细描述您想仿制的试玩广告内容，包括核心玩法、引导手势和结束页面..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
-            />
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">参考来源</label>
+            
+            {/* Source Type Tabs */}
+            <div className="flex bg-slate-900 p-1 rounded-lg mb-3">
+                <button 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-all ${inputType === 'desc' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                    onClick={() => setInputType('desc')}
+                >
+                    <AlignLeft className="w-3.5 h-3.5" /> 文本描述
+                </button>
+                <button 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-all ${inputType === 'file' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                    onClick={() => setInputType('file')}
+                >
+                    <Upload className="w-3.5 h-3.5" /> 上传文件
+                </button>
+                <button 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-all ${inputType === 'url' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                    onClick={() => setInputType('url')}
+                >
+                    <LinkIcon className="w-3.5 h-3.5" /> URL 链接
+                </button>
+            </div>
+
+            {inputType === 'desc' && (
+                <textarea 
+                  rows={6}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="详细描述您想仿制的试玩广告内容，包括核心玩法、引导手势和结束页面..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+                />
+            )}
+
+            {inputType === 'file' && (
+                <div 
+                    className="relative w-full aspect-[2/1] border-2 border-dashed border-slate-600 rounded-xl hover:border-indigo-500 transition-colors cursor-pointer bg-slate-900/50 flex flex-col items-center justify-center group"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    {adFile ? (
+                        <div className="flex flex-col items-center gap-2">
+                            <FileText className="w-8 h-8 text-green-400" />
+                            <p className="text-sm text-white font-medium truncate max-w-[200px]">{adFile.name}</p>
+                            <p className="text-xs text-slate-500">{(adFile.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2 text-slate-500 group-hover:text-indigo-400">
+                            <Upload className="w-8 h-8" />
+                            <p className="text-xs">点击上传 .html 或 .zip 试玩文件</p>
+                        </div>
+                    )}
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept=".html,.htm,.zip" 
+                        onChange={handleFileChange} 
+                    />
+                </div>
+            )}
+
+            {inputType === 'url' && (
+                <input 
+                    type="text" 
+                    value={adUrl}
+                    onChange={(e) => setAdUrl(e.target.value)}
+                    placeholder="https://example.com/playable-ad"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+            )}
+
+            {(inputType === 'file' || inputType === 'url') && (
+                <div className="mt-3">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">补充说明 (Optional)</label>
+                    <textarea 
+                        rows={2}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="关于此文件/链接的额外修改需求或重点关注..."
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+                    />
+                </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
