@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { Layers, Loader2, Sparkles, Upload, Maximize2, Download, Copy, Check, Palette, Cpu, X, Trash2, MousePointerClick } from 'lucide-react';
-import { generateCompositeImage } from '../services/geminiService';
+import { Layers, Loader2, Sparkles, Upload, Maximize2, Download, Copy, Check, Palette, Cpu, X, Trash2, MousePointerClick, Wand2, Shuffle, RefreshCcw } from 'lucide-react';
+import { generateCompositeImage, generateAdImage } from '../services/geminiService';
 
 interface GeneratedResult {
   id: string;
@@ -30,6 +30,11 @@ const ImageComposition: React.FC = () => {
     logo: null
   });
 
+  // Slot Generation States
+  const [generationMode, setGenerationMode] = useState<Record<string, boolean>>({});
+  const [slotPrompts, setSlotPrompts] = useState<Record<string, string>>({});
+  const [slotLoading, setSlotLoading] = useState<Record<string, boolean>>({});
+
   const [compositionPrompt, setCompositionPrompt] = useState('');
   const [selectedAspectRatios, setSelectedAspectRatios] = useState<string[]>(['1:1']);
   const [selectedStyle, setSelectedStyle] = useState('3D Render');
@@ -51,6 +56,44 @@ const ImageComposition: React.FC = () => {
     { id: 'logo', label: '游戏名称图 (Logo)', placeholder: 'Logo/标题文字' }
   ];
 
+  const randomPrompts: Record<string, string[]> = {
+    background: [
+        "Fantasy forest clearing with magical glowing plants",
+        "Sci-fi cyberpunk city street at night with neon lights",
+        "Sunny tropical beach paradise with palm trees",
+        "Dark spooky dungeon interior with stone walls",
+        "Abstract geometric pattern background, vibrant colors"
+    ],
+    gameplay: [
+        "Match-3 puzzle game board with colorful gems and combos",
+        "RPG battle scene, hero attacking a dragon, damage numbers",
+        "FPS game HUD view, holding a futuristic weapon",
+        "Strategy game map view with hexagon tiles and armies",
+        "Casual card game table layout"
+    ],
+    character: [
+        "Cute anime warrior girl holding a sword, full body",
+        "Fierce orc warrior with armor, concept art",
+        "Cool space marine soldier with helmet",
+        "Funny cartoon mascot rabbit jumping",
+        "Mysterious wizard casting a spell"
+    ],
+    icon: [
+        "Shiny gold coin app icon, 3d render",
+        "Magic blue potion bottle icon",
+        "Sword and shield crossed icon, metallic",
+        "Treasure chest overflowing with gems icon",
+        "Rocket ship launching icon, flat style"
+    ],
+    logo: [
+        "Game title text 'Battle Quest' in metallic gold style",
+        "Colorful bubbly text 'Puzzle Match' logo",
+        "Horror style dripping blood text 'Nightmare'",
+        "Sci-fi glowing blue text 'Star Wars' style",
+        "Elegant cursive text 'Royal Kingdom' logo"
+    ]
+  };
+
   const modelOptions = [
     { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
     { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro (高质量)' }
@@ -60,11 +103,21 @@ const ImageComposition: React.FC = () => {
     { value: '3D Render', label: '3D 渲染 (3D Render)' },
     { value: 'Cartoon', label: '卡通 (Cartoon)' },
     { value: 'Realistic', label: '写实 (Realistic)' },
-    { value: 'Cinematic', label: '电影感 (Cinematic)' },
-    { value: 'Anime', label: '日系动漫 (Anime)' },
+    { value: 'Pixel Art', label: '像素风 (Pixel Art)' },
     { value: 'Minimalist', label: '简约 (Minimalist)' },
     { value: 'Cyberpunk', label: '赛博朋克 (Cyberpunk)' },
-    { value: 'Commercial', label: '商业广告 (Commercial)' }
+    { value: 'Anime', label: '日系动漫 (Anime)' },
+    { value: 'Oil Painting', label: '油画 (Oil Painting)' },
+    { value: 'Watercolor', label: '水彩 (Watercolor)' },
+    { value: 'Sketch', label: '素描 (Sketch)' },
+    { value: 'Low Poly', label: '低多边形 (Low Poly)' },
+    { value: 'Disney Style', label: '迪斯尼 (Disney)' },
+    { value: 'Pixar Style', label: '皮克斯 (Pixar)' },
+    { value: 'Studio Ghibli', label: '宫崎骏 (Studio Ghibli)' },
+    { value: 'Medieval Fantasy', label: '中世纪 (Medieval)' },
+    { value: 'Felt/Wool Art', label: '粘毛风 (Felt/Wool Art)' },
+    { value: 'Claymorphism', label: '粘土风 (Claymorphism)' },
+    { value: 'Wooden', label: '木头风 (Wooden)' }
   ];
 
   const aspectRatioOptions = [
@@ -92,6 +145,8 @@ const ImageComposition: React.FC = () => {
       const reader = new FileReader();
       reader.onload = (ev) => {
           setImages(prev => ({ ...prev, [slotId]: ev.target?.result as string }));
+          // Exit generation mode if active
+          setGenerationMode(prev => ({ ...prev, [slotId]: false }));
       };
       reader.readAsDataURL(file);
     }
@@ -111,6 +166,60 @@ const ImageComposition: React.FC = () => {
         ? prev.filter(r => r !== ratio) 
         : [...prev, ratio]
     );
+  };
+
+  // Slot Generation Functions
+  const toggleGenerationMode = (slotId: string, e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setGenerationMode(prev => ({ ...prev, [slotId]: !prev[slotId] }));
+  };
+
+  const handleSlotPromptChange = (slotId: string, value: string) => {
+      setSlotPrompts(prev => ({ ...prev, [slotId]: value }));
+  };
+
+  const handleSlotRandomPrompt = (slotId: string) => {
+      const prompts = randomPrompts[slotId] || randomPrompts.background;
+      const random = prompts[Math.floor(Math.random() * prompts.length)];
+      setSlotPrompts(prev => ({ ...prev, [slotId]: random }));
+  };
+
+  const generateForSlot = async (slotId: string) => {
+      const prompt = slotPrompts[slotId];
+      if (!prompt) {
+          alert("请输入描述或点击随机生成");
+          return;
+      }
+
+      // Check API Key
+      if ((window as any).aistudio && (selectedModel === 'gemini-3-pro-image-preview')) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            await (window as any).aistudio.openSelectKey();
+        }
+      }
+
+      setSlotLoading(prev => ({ ...prev, [slotId]: true }));
+      
+      try {
+          const { imageUrl } = await generateAdImage(
+              prompt,
+              '1:1', // Always square for assets usually
+              selectedStyle,
+              `Asset for mobile game ad composition: ${slotId}`,
+              'English',
+              false,
+              true,
+              selectedModel
+          );
+          setImages(prev => ({ ...prev, [slotId]: imageUrl }));
+          setGenerationMode(prev => ({ ...prev, [slotId]: false }));
+      } catch (error) {
+          console.error(error);
+          alert("生成素材失败，请重试。");
+      } finally {
+          setSlotLoading(prev => ({ ...prev, [slotId]: false }));
+      }
   };
 
   const handleGenerate = async () => {
@@ -136,7 +245,7 @@ const ImageComposition: React.FC = () => {
         });
 
     if (validImages.length === 0) {
-        alert("请至少上传一张素材图片");
+        alert("请至少上传或生成一张素材图片");
         return;
     }
     if (selectedAspectRatios.length === 0) {
@@ -233,7 +342,7 @@ const ImageComposition: React.FC = () => {
             <Layers className="w-5 h-5 text-indigo-400" />
             图片素材合成
           </h2>
-          <p className="text-sm text-slate-400 mt-1">上传分层素材，AI 智能排版合成高质量广告图。</p>
+          <p className="text-sm text-slate-400 mt-1">上传或生成分层素材，AI 智能排版合成高质量广告图。</p>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-2">
@@ -243,33 +352,83 @@ const ImageComposition: React.FC = () => {
                 {uploadSlots.map((slot) => (
                     <div 
                         key={slot.id}
-                        className={`relative aspect-square border-2 border-dashed rounded-xl cursor-pointer flex flex-col items-center justify-center p-2 text-center transition-all group overflow-hidden ${
+                        className={`relative aspect-square border-2 border-dashed rounded-xl flex flex-col transition-all group overflow-hidden ${
                             images[slot.id] 
                             ? 'border-indigo-500 bg-slate-900' 
-                            : 'border-slate-600 hover:border-slate-500 bg-slate-900/50'
+                            : 'border-slate-600 bg-slate-900/50 hover:border-slate-500'
                         }`}
-                        onClick={() => fileInputRefs.current[slot.id]?.click()}
                     >
                         {images[slot.id] ? (
+                            // Image Present View
                             <>
                                 <img src={images[slot.id]!} alt={slot.label} className="w-full h-full object-contain" />
                                 <button 
                                     onClick={(e) => removeImage(slot.id, e)}
-                                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-500"
                                 >
                                     <X className="w-3 h-3" />
                                 </button>
-                                <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[10px] text-white py-1 truncate px-1">
+                                <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[10px] text-white py-1 truncate px-1 text-center">
                                     {slot.label}
                                 </div>
                             </>
+                        ) : generationMode[slot.id] ? (
+                            // Generation View
+                            <div className="flex flex-col h-full p-2 gap-2 relative">
+                                <button 
+                                    onClick={(e) => toggleGenerationMode(slot.id, e)}
+                                    className="absolute top-1 right-1 text-slate-500 hover:text-white"
+                                    title="返回上传"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                                <label className="text-[9px] text-indigo-300 font-bold uppercase tracking-wider">{slot.label}</label>
+                                <textarea 
+                                    className="flex-1 w-full bg-black/20 border border-slate-700 rounded p-1.5 text-[10px] text-white resize-none focus:outline-none focus:border-indigo-500"
+                                    placeholder="输入描述..."
+                                    value={slotPrompts[slot.id] || ''}
+                                    onChange={(e) => handleSlotPromptChange(slot.id, e.target.value)}
+                                />
+                                <div className="flex gap-1 h-6">
+                                    <button 
+                                        onClick={() => handleSlotRandomPrompt(slot.id)}
+                                        className="bg-slate-700 hover:bg-slate-600 text-white w-6 flex items-center justify-center rounded transition-colors"
+                                        title="随机提示词"
+                                    >
+                                        <Shuffle className="w-3 h-3" />
+                                    </button>
+                                    <button 
+                                        onClick={() => generateForSlot(slot.id)}
+                                        disabled={slotLoading[slot.id]}
+                                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] rounded flex items-center justify-center gap-1 transition-colors"
+                                    >
+                                        {slotLoading[slot.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                        生成
+                                    </button>
+                                </div>
+                            </div>
                         ) : (
-                            <>
-                                <Upload className="w-6 h-6 text-slate-500 mb-2 group-hover:text-indigo-400 transition-colors" />
-                                <span className="text-[10px] text-slate-400 font-medium">{slot.label}</span>
-                                <span className="text-[9px] text-slate-600 mt-1">{slot.placeholder}</span>
-                            </>
+                            // Empty Upload View
+                            <div 
+                                className="flex flex-col items-center justify-center h-full w-full cursor-pointer relative"
+                                onClick={() => fileInputRefs.current[slot.id]?.click()}
+                            >
+                                <div className="flex-1 flex flex-col items-center justify-center w-full">
+                                    <Upload className="w-6 h-6 text-slate-500 mb-2 group-hover:text-indigo-400 transition-colors" />
+                                    <span className="text-[10px] text-slate-400 font-medium">{slot.label}</span>
+                                    <span className="text-[9px] text-slate-600 mt-1 px-1 truncate w-full text-center">{slot.placeholder}</span>
+                                </div>
+                                <div className="w-full px-2 pb-2">
+                                    <button
+                                        onClick={(e) => toggleGenerationMode(slot.id, e)}
+                                        className="w-full py-1 bg-slate-800 hover:bg-indigo-900/50 text-indigo-300 text-[9px] rounded border border-indigo-500/30 flex items-center justify-center gap-1 transition-colors"
+                                    >
+                                        <Wand2 className="w-2.5 h-2.5" /> AI 生成
+                                    </button>
+                                </div>
+                            </div>
                         )}
+                        
                         <input 
                             type="file" 
                             ref={el => fileInputRefs.current[slot.id] = el}
@@ -319,7 +478,7 @@ const ImageComposition: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Palette className="w-3 h-3" /> 风格微调
+                        <Palette className="w-3 h-3" /> 素材风格
                     </label>
                     <select 
                         value={selectedStyle}
@@ -478,7 +637,7 @@ const ImageComposition: React.FC = () => {
                         <Layers className="w-8 h-8 text-slate-600" />
                     </div>
                     <p className="text-lg font-medium">暂无合成结果</p>
-                    <p className="text-sm">上传素材并填写指令进行合成。</p>
+                    <p className="text-sm">上传或生成素材并填写指令进行合成。</p>
                 </div>
             )}
         </div>

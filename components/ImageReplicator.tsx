@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Image as ImageIcon, Loader2, Sparkles, Upload, Maximize2, Download, Copy, Check, Type, User, Palette, Globe, RefreshCcw, Cpu, X, MousePointerClick, Wand2, Trash2, Layers } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Sparkles, Upload, Maximize2, Download, Copy, Check, Type, User, Palette, Globe, RefreshCcw, Cpu, X, Trash2, MousePointerClick, Wand2, Layers, Shuffle } from 'lucide-react';
 import { generateAdImage, describeImageForRecreation } from '../services/geminiService';
 
 interface GeneratedResult {
@@ -18,6 +18,10 @@ const ImageReplicator: React.FC = () => {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [analyzedPrompt, setAnalyzedPrompt] = useState('');
   const [additionalPrompt, setAdditionalPrompt] = useState('');
+  
+  // Reference Generation State
+  const [refPrompt, setRefPrompt] = useState('');
+  const [isGenRef, setIsGenRef] = useState(false);
   
   // Changed to array for multi-select
   const [selectedAspectRatios, setSelectedAspectRatios] = useState<string[]>(['1:1']);
@@ -39,6 +43,19 @@ const ImageReplicator: React.FC = () => {
   const [copiedAnalyzed, setCopiedAnalyzed] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const randomRefPrompts = [
+    "Cyberpunk street with neon lights, anime style, high detail",
+    "Fantasy warrior character portrait, epic lighting, 8k resolution, trending on artstation",
+    "Cute cartoon animals having a picnic in a sunny park, vibrant colors",
+    "Sci-fi spaceship interior, sleek design, blue holograms, cinematic view",
+    "Medieval castle on a hill, sunset, realistic style, matte painting",
+    "Pixel art platformer game level, forest theme, 16-bit style",
+    "Isometric city builder game view, modern metropolis, clean lines",
+    "Dark fantasy dungeon entrance, ominous atmosphere, stone texture",
+    "Anime style high school girl holding a magical staff, dynamic pose",
+    "Low poly floating island with a small house and trees, pastel colors"
+  ];
 
   const imageModelOptions = [
     { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash (快速)' },
@@ -165,9 +182,50 @@ const ImageReplicator: React.FC = () => {
     setTimeout(() => setCopiedAnalyzed(false), 2000);
   };
 
+  const handleRandomRefPrompt = () => {
+    const random = randomRefPrompts[Math.floor(Math.random() * randomRefPrompts.length)];
+    setRefPrompt(random);
+  };
+
+  const handleGenRef = async () => {
+    if (!refPrompt) {
+        alert("请输入提示词");
+        return;
+    }
+    
+    // Check API Key for paid models
+    if ((window as any).aistudio && (selectedImageModel === 'gemini-3-pro-image-preview' || selectedImageModel.includes('imagen'))) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            await (window as any).aistudio.openSelectKey();
+        }
+    }
+
+    setIsGenRef(true);
+    try {
+        const { imageUrl } = await generateAdImage(
+            refPrompt,
+            '1:1', 
+            selectedStyle, 
+            '', 
+            selectedLanguage, 
+            false, 
+            true, 
+            selectedImageModel
+        );
+        setSourceImage(imageUrl);
+        setAnalyzedPrompt(refPrompt);
+    } catch(e) {
+        console.error(e);
+        alert("生成参考图失败，请重试。");
+    } finally {
+        setIsGenRef(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!sourceImage) {
-        alert("请先上传或粘贴一张参考图片");
+        alert("请先上传或生成一张参考图片");
         return;
     }
     if (selectedAspectRatios.length === 0) {
@@ -272,7 +330,7 @@ const ImageReplicator: React.FC = () => {
   return (
     <div className="flex h-full gap-6">
       {/* Input Section */}
-      <div className="w-1/3 bg-slate-800 rounded-xl p-6 border border-slate-700/50 flex flex-col shrink-0 h-full overflow-hidden">
+      <div className="w-1/3 min-w-[340px] bg-slate-800 rounded-xl p-6 border border-slate-700/50 flex flex-col shrink-0 h-full overflow-hidden">
         <div className="mb-4 shrink-0">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <RefreshCcw className="w-5 h-5 text-indigo-400" />
@@ -308,6 +366,42 @@ const ImageReplicator: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Reference Generator (Only show if no image or to allow replacement logic, here showing only if !sourceImage to keep clean, user can clear image to see it) */}
+            {!sourceImage && (
+                <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <Wand2 className="w-3 h-3 text-indigo-400" /> 或：AI 生成参考图
+                        </label>
+                        <button 
+                            onClick={handleRandomRefPrompt}
+                            className="text-[10px] bg-slate-700 hover:bg-indigo-600 text-white px-2 py-0.5 rounded flex items-center gap-1 transition-colors"
+                            title="随机生成提示词"
+                        >
+                            <Shuffle className="w-3 h-3" />
+                            随机
+                        </button>
+                    </div>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={refPrompt}
+                            onChange={(e) => setRefPrompt(e.target.value)}
+                            placeholder="输入描述生成参考图 (如: 赛博朋克风格的机甲战士)"
+                            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+                            onKeyDown={(e) => e.key === 'Enter' && handleGenRef()}
+                        />
+                        <button 
+                            onClick={handleGenRef}
+                            disabled={isGenRef}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 whitespace-nowrap flex items-center min-w-[60px] justify-center"
+                        >
+                            {isGenRef ? <Loader2 className="w-3 h-3 animate-spin" /> : '生成'}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {sourceImage && (
                 <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
@@ -352,7 +446,7 @@ const ImageReplicator: React.FC = () => {
                     value={additionalPrompt}
                     onChange={(e) => setAdditionalPrompt(e.target.value)}
                     placeholder="例如：把背景改成雪地，主角换成猫..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none text-xs"
                 />
             </div>
 
@@ -413,7 +507,7 @@ const ImageReplicator: React.FC = () => {
 
             <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <Palette className="w-3 h-3" /> 风格微调
+                    <Palette className="w-3 h-3" /> 素材风格
                 </label>
                 <select 
                     value={selectedStyle}

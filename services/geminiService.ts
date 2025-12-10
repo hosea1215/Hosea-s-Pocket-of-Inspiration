@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { 
   GameDetails, 
@@ -79,6 +80,13 @@ const generateJson = async <T>(prompt: string, model: string = 'gemini-3-pro-pre
 };
 
 // --- Exported Service Functions ---
+
+export const createChatSession = (model: string, systemInstruction?: string) => {
+  return ai.chats.create({
+    model: model,
+    config: { systemInstruction }
+  });
+};
 
 export const generateMarketingPlan = async (details: GameDetails, platform: string, language: string, model: string) => {
   const prompt = `Create a marketing strategy for a game. Platform: ${platform}. Language: ${language}.
